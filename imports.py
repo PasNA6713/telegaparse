@@ -11,7 +11,7 @@ class retry:
 	def __call__(self, func):
 		def process(try_number:int=0, *args, **kwargs):
 			try:
-				a = func(*args, **kwargs)
+				func(*args, **kwargs)
 			except requests.exceptions.ConnectionError:
 				print("Failed")
 				try_number += 1

@@ -5,6 +5,7 @@ class EndOfPages(Exception):
 	pass
 
 def _get_url(filter_params = {"markets": [], "categories": [], "districts": [], "regions": []}) -> str:
+	"""create link with accepted filter params"""
 	def make_str(data: list, tag: str) -> str:
 		result = ""
 		for i in data:
@@ -31,36 +32,38 @@ def _get_url(filter_params = {"markets": [], "categories": [], "districts": [], 
 
 @retry(3)
 class _url():
+	"""object for saving current page"""
 	def __init__(self, filter_params=None, page=1):
 		if filter_params:
-			self.link = _get_url(filter_params) + f"&page={page}"
+			self._link = _get_url(filter_params) + f"&page={page}"
 		else:
-			self.link = _get_url() + f"&page={page}"
-		page = BS(requests.get(self.link).text, features="lxml")
+			self._link = _get_url() + f"&page={page}"
+		page = BS(requests.get(self._link).text, features="lxml")
 		pages_num = page.findAll("a", {"class": "page-link"})
 		if pages_num:
-			self.max_pages = int(pages_num[-2].text)
-		else: self.max_pages = 0
+			self._max_pages = int(pages_num[-2].text)
+		else: self._max_pages = 0
 		self.goods = [i["href"] for i in page.findAll("a", {"class": "lot-description__link"})]
         
 	def __str__(self):
-		return self.link
+		return self._link
     
 	def __repr__(self):
-		return f"{self.link} : {str(self.goods)}"
+		return f"{self._link} : {str(self.goods)}"
     
 	def __next__(self):
-		last_page = int(self.link.split("=")[-1])
-		if last_page < self.max_pages:
+		last_page = int(self._link.split("=")[-1])
+		if last_page < self._max_pages:
 			page = last_page + 1
-			self.link = self.link.rstrip(str(last_page)) + str(page)
-			self.goods = [i["href"] for i in BS(requests.get(self.link).text).findAll("a", {"class": "lot-description__link"})]
+			self._link = self._link.rstrip(str(last_page)) + str(page)
+			self.goods = [i["href"] for i in BS(requests.get(self._link).text).findAll("a", {"class": "lot-description__link"})]
 			return self
 		else: raise EndOfPages
 
 
 @retry(3)
 def _get_lot_info(url: str) -> dict:
+	"""generate lot info from it's url"""
 	lot = {
 		"date": {
 				"bidding": "",
@@ -166,30 +169,36 @@ class WebWorker:
 	"""class for working with website"""
 	def __init__(self, filter_params: dict = {}):
 		if filter_params:
-			self.cur_page = _url(filter_params)
+			self._cur_page = _url(filter_params)
 		else:
-			self.cur_page = _url()
-		
-		self.page_ends = False
-		self.lots = deque(self.cur_page.goods) # deque of lot's links
-		self.lots_info = deque([_get_lot_info(self.lots.popleft()) for i in range(9) if self.lots]) # deque of lot's info
+			self._cur_page = _url()
+		self._is_page_ends = False
+
+		self._lots = deque(self._cur_page.goods) # deque of lot's links
+		self._lots_info = deque([_get_lot_info(self._lots.popleft()) for i in range(8) if self._lots]) # deque of lot's info
         
 
-	def next_page(self):
-		"""extend lot's links or toggle self.page_ends into true if pages ends"""
+	def _next_page(self):
+		"""extend lot's links or toggle self._is_page_ends into true if pages ends"""
 		try:
-			next(self.cur_page)
-			self.lots.extend(self.cur_page.goods)
+			next(self._cur_page)
+			self._lots.extend(self._cur_page.goods)
 		except EndOfPages:
-			self.page_ends = True
+			self._is_page_ends = True
+    
 
-        
-	def add_lots_info(self, number_of_lots: int = 4):
+	def get_lots_info(self, func, number_of_lots: int = 4):
 		"""
 		Extend lot's info and call self.next_page() if we have lesser then 25 links in self.lots
 		Do nothing if lots and pages ends
 		"""
-		result = [_get_lot_info(self.lots.popleft()) for i in range(number_of_lots) if self.lots]
-		if len(self.lots) < 25 and self.page_ends is False:
-			self.next_page()
-		self.lots_info.extend(result)
+		def get_from_ram(number_of_lots: int = number_of_lots):
+			# draw number_of_lots lots
+			func([self._lots_info.popleft() for i in range(number_of_lots) if self._lots_info])
+			# get new lots
+			self._lots_info.extend([_get_lot_info(self._lots.popleft()) for i in range(number_of_lots) if self._lots])
+			# get lots from new page if it needs
+			if len(self._lots) < 25 and self._is_page_ends is False:
+				self._next_page()
+		return get_from_ram
+

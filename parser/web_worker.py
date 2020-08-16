@@ -4,6 +4,7 @@ from imports import *
 class EndOfPages(Exception):
 	pass
 
+
 def get_url(filter_params = {"markets": [], "categories": [], "districts": [], "regions": []}) -> str:
 	"""create link with accepted filter params"""
 	def make_str(data: list, tag: str) -> str:
@@ -16,6 +17,7 @@ def get_url(filter_params = {"markets": [], "categories": [], "districts": [], "
 	start_price_to = ""
 	current_price_from = ""
 	current_price_to = ""
+	search_text = ""
 	marketplaces = make_str(filter_params["markets"], "marketplaces")
 	categories = make_str(filter_params["categories"], "categorie_childs")
 	districts = make_str(filter_params["districts"], "districts")
@@ -26,8 +28,10 @@ def get_url(filter_params = {"markets": [], "categories": [], "districts": [], "
 	if 'current price' in filter_params.keys():
 		current_price_from = filter_params['current price']['from']
 		current_price_to = filter_params['current price']['to']
+	if "search text" in filter_params.keys():
+		search_text = filter_params['search text']
 
-	return f"https://торги-россии.рф/search?title_search=&search={marketplaces}{categories}{districts}{regions}&trades-section=bankrupt&begin-price-from={start_price_from}&begin-price-to={start_price_to}&current-price-from={current_price_from}&current-price-to={current_price_to}"
+	return f"https://торги-россии.рф/search?title_search=&search={search_text}{marketplaces}{categories}{districts}{regions}&trades-section=bankrupt&begin-price-from={start_price_from}&begin-price-to={start_price_to}&current-price-from={current_price_from}&current-price-to={current_price_to}"
 
 
 @retry(3)
@@ -50,13 +54,14 @@ class Url():
     
 	def __repr__(self):
 		return f"{self._link} : {str(self.goods)}"
-    
+
 	def __next__(self):
 		last_page = int(self._link.split("=")[-1])
 		if last_page < self._max_pages:
 			page = last_page + 1
 			self._link = self._link.rstrip(str(last_page)) + str(page)
-			self.goods = [i["href"] for i in BS(requests.get(self._link).text).findAll("a", {"class": "lot-description__link"})]
+			self.goods = [i["href"] for i in 
+				BS(requests.get(self._link).text, features="lxml").findAll("a", {"class": "lot-description__link"})]
 			return self
 		else: raise EndOfPages
 

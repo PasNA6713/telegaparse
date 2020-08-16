@@ -1,6 +1,3 @@
-import telebot
-from telebot import types
-
 bot = telebot.TeleBot('1225070960:AAEST2WsWFmScFepQBA6mOh-4cDQVQVoEE4')
 flags = {
     'categories': {

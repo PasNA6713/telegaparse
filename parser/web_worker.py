@@ -4,7 +4,7 @@ from imports import *
 class EndOfPages(Exception):
 	pass
 
-def _get_url(filter_params = {"markets": [], "categories": [], "districts": [], "regions": []}) -> str:
+def get_url(filter_params = {"markets": [], "categories": [], "districts": [], "regions": []}) -> str:
 	"""create link with accepted filter params"""
 	def make_str(data: list, tag: str) -> str:
 		result = ""
@@ -31,13 +31,13 @@ def _get_url(filter_params = {"markets": [], "categories": [], "districts": [], 
 
 
 @retry(3)
-class _url():
+class Url():
 	"""object for saving current page"""
 	def __init__(self, filter_params=None, page=1):
 		if filter_params:
-			self._link = _get_url(filter_params) + f"&page={page}"
+			self._link = get_url(filter_params) + f"&page={page}"
 		else:
-			self._link = _get_url() + f"&page={page}"
+			self._link = get_url() + f"&page={page}"
 		page = BS(requests.get(self._link).text, features="lxml")
 		pages_num = page.findAll("a", {"class": "page-link"})
 		if pages_num:
@@ -62,7 +62,7 @@ class _url():
 
 
 @retry(3)
-def _get_lot_info(url: str) -> dict:
+def get_lot_info(url: str) -> dict:
 	"""generate lot info from it's url"""
 	lot = {
 		"date": {
@@ -169,16 +169,16 @@ class WebWorker:
 	"""class for working with website"""
 	def __init__(self, filter_params: dict = {}):
 		if filter_params:
-			self._cur_page = _url(filter_params)
+			self._cur_page = Url(filter_params)
 		else:
-			self._cur_page = _url()
+			self._cur_page = Url()
 		self._is_page_ends = False
 
 		self._lots = deque(self._cur_page.goods) # deque of lot's links
-		self._lots_info = deque([_get_lot_info(self._lots.popleft()) for i in range(8) if self._lots]) # deque of lot's info
+		self._lots_info = deque([get_lot_info(self._lots.popleft()) for i in range(8) if self._lots]) # deque of lot's info
         
 
-	def _next_page(self):
+	def next_page(self):
 		"""extend lot's links or toggle self._is_page_ends into true if pages ends"""
 		try:
 			next(self._cur_page)
@@ -196,9 +196,9 @@ class WebWorker:
 			# draw number_of_lots lots
 			func([self._lots_info.popleft() for i in range(number_of_lots) if self._lots_info])
 			# get new lots
-			self._lots_info.extend([_get_lot_info(self._lots.popleft()) for i in range(number_of_lots) if self._lots])
+			self._lots_info.extend([get_lot_info(self._lots.popleft()) for i in range(number_of_lots) if self._lots])
 			# get lots from new page if it needs
 			if len(self._lots) < 25 and self._is_page_ends is False:
-				self._next_page()
+				self.next_page()
 		return get_from_ram
 

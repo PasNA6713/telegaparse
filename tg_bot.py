@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
 
-bot = telebot.TeleBot('1225070960:AAEST2WsWFmScFepQBA6mOh-4cDQVQVoEE4')
+bot = telebot.TeleBot('1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50')
 flags = {
     'categories': {
         'Легковой транспорт': [0, False]

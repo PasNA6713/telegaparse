@@ -2,39 +2,51 @@ import telebot
 from telebot import types
 
 bot = telebot.TeleBot('1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50')
-flags = {
+
+keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
+key_markets = types.InlineKeyboardButton(text='Площадки', callback_data='markets_query')
+key_category = types.InlineKeyboardButton(text='Категории', callback_data='category_query')
+key_regions = types.InlineKeyboardButton(text='Регионы', callback_data='regions_query')
+key_start_price = types.InlineKeyboardButton(text='Начальная стоимость', callback_data='start_price_query')
+key_end_price = types.InlineKeyboardButton(text='Конечная стоимость', callback_data='end_price_query')
+key_search = types.InlineKeyboardButton(text='Найти лоты', callback_data='search_query')
+key_text = types.InlineKeyboardButton(text='Поиск по словам', callback_data='search_query_text')
+keyboard_menu.add(key_start_price, key_end_price, key_markets, key_regions, key_category, key_text)
+keyboard_menu.add(key_search)
+
+template_flags = {
     'categories': {
-        'Легковой транспорт': [0, False]
-        , 'Грузовой и комм. транспорт': [1, False]
-        , 'Спецтехника': [2, False]
-        , 'Прочий транспорт': [3, False]
-        , 'Автобусы, микроавтобусы': [4, False]
-        , 'Авиатранспорт': [5, False]
-        , 'Водный транспорт': [6, False]
-        , 'Жилая недвижимость': [7, False]
-        , 'Комм. недвижимость': [8, False]
-        , 'Земельные участки': [9, False]
-        , 'Гаражи, строения, сооружения': [10, False]
-        , 'Задолженность физ. лиц': [11, False]
-        , 'Задолженность юр. лиц': [12, False]
-        , 'Смешанная задолженность': [13, False]
-        , 'С/х здания и соружения': [14, False]
-        , 'Животные и скот': [15, False]
-        , 'С/х комплекс': [16, False]
-        , 'С/х техника': [17, False]
-        , 'С/х оборудование': [18, False]
-        , 'Пром. оборудование': [19, False]
-        , 'Деревообработка': [20, False]
-        , 'Металлообработка': [21, False]
-        , 'Пищевое оборудование': [22, False]
-        , 'Складское и торг. оборуд.': [23, False]
-        , 'Строительное оборудование': [24, False]
-        , 'Другое оборудование': [25, False]
-        , 'Мебель': [26, False]
-        , 'Оргтехника': [27, False]
-        , 'Бытовая техника': [28, False]
-        , 'Драгоценные металлы, драг. камни и изделия из них': [29, False]
-    }
+    'Легковой транспорт': [0, False]
+    , 'Грузовой и комм. транспорт': [1, False]
+    , 'Спецтехника': [2, False]
+    , 'Прочий транспорт': [3, False]
+    , 'Автобусы, микроавтобусы': [4, False]
+    , 'Авиатранспорт': [5, False]
+    , 'Водный транспорт': [6, False]
+    , 'Жилая недвижимость': [7, False]
+    , 'Комм. недвижимость': [8, False]
+    , 'Земельные участки': [9, False]
+    , 'Гаражи, строения, сооружения': [10, False]
+    , 'Задолженность физ. лиц': [11, False]
+    , 'Задолженность юр. лиц': [12, False]
+    , 'Смешанная задолженность': [13, False]
+    , 'С/х здания и соружения': [14, False]
+    , 'Животные и скот': [15, False]
+    , 'С/х комплекс': [16, False]
+    , 'С/х техника': [17, False]
+    , 'С/х оборудование': [18, False]
+    , 'Пром. оборудование': [19, False]
+    , 'Деревообработка': [20, False]
+    , 'Металлообработка': [21, False]
+    , 'Пищевое оборудование': [22, False]
+    , 'Складское и торг. оборуд.': [23, False]
+    , 'Строительное оборудование': [24, False]
+    , 'Другое оборудование': [25, False]
+    , 'Мебель': [26, False]
+    , 'Оргтехника': [27, False]
+    , 'Бытовая техника': [28, False]
+    , 'Драгоценные металлы, драг. камни и изделия из них': [29, False]
+}
     , 'regions': {
         'Белгородская область': [0, False]
         , 'Брянская область': [1, False]
@@ -155,7 +167,10 @@ flags = {
         , 'Арбитат': [29, False]
         , 'Балтийская электронная площадка': [30, False]
         , 'Объединенная Торговая Площадка': [31, False]
-        , 'ООО «Специализированная организация по проведению торгов – Южная Электронная Торговая Площадка»': [32, False]
+        ,
+        'ООО «Специализированная организация по проведению торгов – Южная Электронная Торговая Площадка»': [
+            32,
+            False]
         , 'Электронная торговая площадка Заказ РФ': [33, False]
         , 'Банкротство РТ': [34, False]
         , 'UralBidIn': [35, False]
@@ -173,206 +188,214 @@ flags = {
         , 'Системы Электронных Торгов': [47, False]
         , 'ТендерСтандарт': [48, False]
         , 'Систематорг': [49, False]
-    }
-    , 'in_menu_pressed': {
-        'Категории': False
-        , 'Площадки': False
-        , 'Регионы': False
-        , 'Начальная стоимость': False
-        , 'Конечная стоимость': False
-        , 'Найти лоты': False
-    }
-}
-
-keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
-key_markets = types.InlineKeyboardButton(text='Площадки', callback_data='markets_query')
-key_category = types.InlineKeyboardButton(text='Категории', callback_data='category_query')
-key_regions = types.InlineKeyboardButton(text='Регионы', callback_data='regions_query')
-key_start_price = types.InlineKeyboardButton(text='Начальная стоимость', callback_data='start_price_query')
-key_end_price = types.InlineKeyboardButton(text='Конечная стоимость', callback_data='end_price_query')
-key_search = types.InlineKeyboardButton(text='Найти лоты', callback_data='search_query')
-keyboard_menu.add(key_start_price, key_end_price, key_markets, key_regions, key_category)
-keyboard_menu.add(key_search)
+    }}
+flags = {}
 
 
-def make_menu_categories(call):
-    keys_lst = []
+class Bot:
+    global flags, template_flags
 
-    keyboard_category = types.InlineKeyboardMarkup(row_width=2)
+    def __init__(self, chatId):
+        global flags
+        self.session = chatId
+        if chatId not in flags:
+            flag = {chatId: template_flags}
+            print(flag)
+            flags.update(flag)
 
-    for item in flags.get("categories"):
-        if flags["categories"][item][1]:
-            btn_text = f"✅{item}"
-        else:
-            btn_text = item
-        key = types.InlineKeyboardButton(text=btn_text,
-                                         callback_data=f"btnCategory_{flags.get('categories').get(item)[0]}")
+    def make_menu_categories(self, call):
+        keys_lst = []
+
+        keyboard_category = types.InlineKeyboardMarkup(row_width=2)
+
+        for item in flags.get(self.session).get("categories"):
+            if flags[self.session]["categories"][item][1]:
+                btn_text = f"✅{item}"
+            else:
+                btn_text = item
+            key = types.InlineKeyboardButton(text=btn_text,
+                                             callback_data=f"btnCategory_{flags.get(self.session).get('categories').get(item)[0]}")
+            keys_lst.append(key)
+        key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
         keys_lst.append(key)
-    key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
-    keys_lst.append(key)
-    keyboard_category.add(*keys_lst)
-    bot.edit_message_text(text='Выбери категории', chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          reply_markup=keyboard_category)
+        keyboard_category.add(*keys_lst)
+        bot.edit_message_text(text='Выбери категории', chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=keyboard_category)
 
+    def make_menu_regions(self, call):
+        keys_lst = []
 
-def make_menu_regions(call):
-    keys_lst = []
+        keyboard_regions = types.InlineKeyboardMarkup(row_width=2)
 
-    keyboard_regions = types.InlineKeyboardMarkup(row_width=2)
+        for item in flags.get(self.session).get("regions"):
+            if flags[self.session]["regions"][item][1]:
+                btn_text = f"✅{item}"
+            else:
+                btn_text = item
+            key = types.InlineKeyboardButton(text=btn_text,
+                                             callback_data=f"btnRegions_{flags.get(self.session).get('regions').get(item)[0]}")
+            keys_lst.append(key)
 
-    for item in flags.get("regions"):
-        if flags["regions"][item][1]:
-            btn_text = f"✅{item}"
+        keyboard_regions.add(*keys_lst)
+        key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
+        keyboard_regions.add(key)
+        bot.edit_message_text(text='Выбери регионы', chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=keyboard_regions)
+
+    def make_menu_markets(self, call):
+        keys_lst = []
+
+        keyboard_markets = types.InlineKeyboardMarkup(row_width=1)
+
+        for item in flags.get(self.session).get("markets"):
+            if flags[self.session]["markets"][item][1]:
+                btn_text = f"✅{item}"
+            else:
+                btn_text = item
+            key = types.InlineKeyboardButton(text=btn_text,
+                                             callback_data=f"btnMarkets_{flags.get(self.session).get('markets').get(item)[0]}")
+            keys_lst.append(key)
+
+        keyboard_markets.add(*keys_lst)
+        key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
+        keyboard_markets.add(key)
+        bot.edit_message_text(text='Выбери площадки', chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=keyboard_markets)
+
+    def make_back_from_menu(self, call):
+        if call.message.text == "Выбери категории":
+            bot.answer_callback_query(call.id, show_alert=True, text="Вы настроили категории!")
+            bot.edit_message_text(text="Давай настроим фильтр?", chat_id=call.message.chat.id,
+                                  message_id=call.message.message_id,
+                                  reply_markup=keyboard_menu)
+        elif call.message.text == "Выбери регионы":
+            bot.answer_callback_query(call.id, show_alert=True, text="Вы настроили регионы!")
+            bot.edit_message_text(text="Давай настроим фильтр?", chat_id=call.message.chat.id,
+                                  message_id=call.message.message_id,
+                                  reply_markup=keyboard_menu)
+        elif call.message.text == "Выбери площадки":
+            bot.answer_callback_query(call.id, show_alert=True, text="Вы настроили площадки!")
+            bot.edit_message_text(text="Давай настроим фильтр?", chat_id=call.message.chat.id,
+                                  message_id=call.message.message_id,
+                                  reply_markup=keyboard_menu)
         else:
-            btn_text = item
-        key = types.InlineKeyboardButton(text=btn_text,
-                                         callback_data=f"btnRegions_{flags.get('regions').get(item)[0]}")
-        keys_lst.append(key)
+            bot.edit_message_text(text="Давай настроим фильтр?", chat_id=call.message.chat.id,
+                                  message_id=call.message.message_id,
+                                  reply_markup=keyboard_menu)
 
-    keyboard_regions.add(*keys_lst)
-    key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
-    keyboard_regions.add(key)
-    bot.edit_message_text(text='Выбери регионы', chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          reply_markup=keyboard_regions)
-
-
-def make_menu_markets(call):
-    keys_lst = []
-
-    keyboard_markets = types.InlineKeyboardMarkup(row_width=1)
-
-    for item in flags.get("markets"):
-        if flags["markets"][item][1]:
-            btn_text = f"✅{item}"
-        else:
-            btn_text = item
-        key = types.InlineKeyboardButton(text=btn_text,
-                                         callback_data=f"btnMarkets_{flags.get('markets').get(item)[0]}")
-        keys_lst.append(key)
-
-    keyboard_markets.add(*keys_lst)
-    key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
-    keyboard_markets.add(key)
-    bot.edit_message_text(text='Выбери площадки', chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          reply_markup=keyboard_markets)
-
-
-def make_back_from_menu(call):
-    if call.message.text == "Выбери категории":
-        bot.answer_callback_query(call.id, show_alert=True, text="Вы настроили категории!")
-        bot.edit_message_text(text="Давай настроим фильтр?", chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=keyboard_menu)
-    elif call.message.text == "Выбери регионы":
-        bot.answer_callback_query(call.id, show_alert=True, text="Вы настроили регионы!")
-        bot.edit_message_text(text="Давай настроим фильтр?", chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=keyboard_menu)
-    elif call.message.text == "Выбери площадки":
-        bot.answer_callback_query(call.id, show_alert=True, text="Вы настроили площадки!")
-        bot.edit_message_text(text="Давай настроим фильтр?", chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=keyboard_menu)
-    else:
-        bot.edit_message_text(text="Давай настроим фильтр?", chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=keyboard_menu)
-
-
-def make_start_price(call):
-    message = bot.edit_message_text(text="Введи стартовую стоимость", chat_id=call.message.chat.id,
-                                    message_id=call.message.message_id)
-    bot.register_next_step_handler(message, get_price)
-
-
-def make_end_price(call):
-    message = bot.edit_message_text(text="Введи конечную стоимость", chat_id=call.message.chat.id,
-                                    message_id=call.message.message_id)
-    bot.register_next_step_handler(message, get_price)
-
-
-def get_price(message):
-    if message.text.isdigit():
+    def get_text(self, message):
         message = bot.send_message(chat_id=message.chat.id, text='Принято')
         bot.edit_message_text(text="Что-то еще настроим?", chat_id=message.chat.id,
                               message_id=message.message_id,
                               reply_markup=keyboard_menu)
-    else:
-        message = bot.send_message(chat_id=message.chat.id, text='Не принято')
-        bot.edit_message_text(text="Введена некорректная стоимость! Введите ее заново", chat_id=message.chat.id,
-                              message_id=message.message_id,
-                              reply_markup=keyboard_menu)
+
+    def get_price(self, message):
+        if message.text.isdigit():
+            message = bot.send_message(chat_id=message.chat.id, text='Принято')
+            bot.edit_message_text(text="Что-то еще настроим?", chat_id=message.chat.id,
+                                  message_id=message.message_id,
+                                  reply_markup=keyboard_menu)
+        else:
+            message = bot.send_message(chat_id=message.chat.id, text='Не принято')
+            bot.edit_message_text(text="Введена некорректная стоимость! Введите ее заново", chat_id=message.chat.id,
+                                  message_id=message.message_id,
+                                  reply_markup=keyboard_menu)
+
+    def make_end_price(self, call):
+        message = bot.edit_message_text(text="Введи конечную стоимость", chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id)
+        bot.register_next_step_handler(message, self.get_price)
+
+    def make_text_query(self, call):
+        message = bot.edit_message_text(text="Введи поисковой запрос", chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id)
+        bot.register_next_step_handler(message, self.get_text)
+
+    def make_start_price(self, call):
+        message = bot.edit_message_text(text="Введи стартовую стоимость", chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id)
+        bot.register_next_step_handler(message, self.get_price)
+
+
+@bot.message_handler(commands=['start'])
+def get_start(message):
+    bot.send_message(message.from_user.id, text="Добро пожаловать в Торги по банкротству РФ!")
+    bot.send_message(message.from_user.id, text="Давай настроим фильтр?", reply_markup=keyboard_menu)
+
+    chatId = message.chat.id
+    tg_bot = Bot(chatId)
+    print(chatId)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    global keyboard_menu
-
+    tg_bot = Bot(call.message.chat.id)
     if call.data == "markets_query":
-        make_menu_markets(call)
+        tg_bot.make_menu_markets(call)
 
     elif call.data == "category_query":
-        make_menu_categories(call)
+        tg_bot.make_menu_categories(call)
 
     elif call.data == "regions_query":
-        make_menu_regions(call)
+        tg_bot.make_menu_regions(call)
 
     elif call.data == "start_price_query":
-        make_start_price(call)
+        tg_bot.make_start_price(call)
 
     elif call.data == "end_price_query":
-        make_end_price(call)
+        tg_bot.make_end_price(call)
 
     elif call.data == "search_query":
         bot.answer_callback_query(call.id, show_alert=True, text="В разработке!")
 
+    elif call.data == "search_query_text":
+        tg_bot.make_text_query(call)
+
     elif call.data == "back_menu":
-        make_back_from_menu(call)
+        tg_bot.make_back_from_menu(call)
 
     elif call.data.split("_")[0] == "btnCategory":
         current_name = ''
-        for k, v in flags.get("categories").items():
+        for k, v in flags.get(tg_bot.session).get("categories").items():
             if str(v[0]) == call.data.split("_")[1]:
                 current_name = k
                 break
-        if not flags.get("categories").get(k)[1]:
-            flags["categories"][current_name][1] = True
-            make_menu_categories(call)
+        if not flags.get(tg_bot.session).get("categories").get(k)[1]:
+            flags[tg_bot.session]["categories"][current_name][1] = True
+            tg_bot.make_menu_categories(call)
         else:
-            flags["categories"][current_name][1] = False
-            make_menu_categories(call)
+            flags[tg_bot.session]["categories"][current_name][1] = False
+            tg_bot.make_menu_categories(call)
 
     elif call.data.split("_")[0] == "btnRegions":
         current_name = ''
-        for k, v in flags.get("regions").items():
+        for k, v in flags.get(tg_bot.session).get("regions").items():
             if str(v[0]) == call.data.split("_")[1]:
                 current_name = k
                 break
-        if not flags.get("regions").get(k)[1]:
-            flags["regions"][current_name][1] = True
-            make_menu_regions(call)
+        if not flags.get(tg_bot.session).get("regions").get(k)[1]:
+            flags[tg_bot.session]["regions"][current_name][1] = True
+            tg_bot.make_menu_regions(call)
         else:
-            flags["regions"][current_name][1] = False
-            make_menu_regions(call)
+            flags[tg_bot.session]["regions"][current_name][1] = False
+            tg_bot.make_menu_regions(call)
 
     elif call.data.split("_")[0] == "btnMarkets":
         current_name = ''
-        for k, v in flags.get("markets").items():
+        for k, v in flags.get(tg_bot.session).get("markets").items():
             if str(v[0]) == call.data.split("_")[1]:
                 current_name = k
                 break
-        if not flags.get("markets").get(k)[1]:
-            flags["markets"][current_name][1] = True
-            make_menu_markets(call)
+        if not flags.get(tg_bot.session).get("markets").get(k)[1]:
+            flags[tg_bot.session]["markets"][current_name][1] = True
+            tg_bot.make_menu_markets(call)
         else:
-            flags["markets"][current_name][1] = False
-            make_menu_markets(call)
-
-
-@bot.message_handler(commands=['start'])
-def get_yes(message):
-    bot.send_message(message.from_user.id, text="Добро пожаловать в бот!")
-    bot.send_message(message.from_user.id, text="Давай настроим фильтр?", reply_markup=keyboard_menu)
+            flags[tg_bot.session]["markets"][current_name][1] = False
+            tg_bot.make_menu_markets(call)
 
 
 bot.polling(none_stop=True, interval=0)
+

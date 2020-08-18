@@ -107,15 +107,20 @@ def get_lot_info(url: str) -> dict:
 	}
     
 	html = BS(requests.get(url).text, features="lxml")
-
 	header = html.findAll("td",{"class": "lot-summary-table__cell"})
 	labels = [i for i in html.findAll("p") if i.find("span", {"class": "param-label"})]
-	debtor = html.find("li", {"id": "debtor-info"}).findAll("p")
-	organizer = html.find("li", {"id": "organizer"}).findAll("p")
+	try:
+		debtor = html.find("li", {"id": "debtor-info"}).findAll("p")
+	except Exception:
+		debtor = []
+	try:
+		organizer = html.find("li", {"id": "organizer"}).findAll("p")
+	except Exception:
+		organizer = []
 
 	lot["cost"]["current"] = html.find("p", {"class": "lot-cost__value"}).text
 	lot["description"]["title"] = html.find("h2", {"class": "lot-caption__title js-share-search"}).text
-
+	
 	for i in range(len(header)):
 		if header[i].text=="Статус:":
 			lot["state"] = header[i+1].text
@@ -130,6 +135,7 @@ def get_lot_info(url: str) -> dict:
 		elif header[i].text=="Площадка:":
 			lot['marketplace']['name'] = header[i+1].text.strip()
 			lot['marketplace']['url'] = html.find("a", {"class": "button button--blue"})["href"]
+
 
 	for i in range(len(labels)):
 		if labels[i].find("span", {"class": "param-label"}).text == "Регион:":
@@ -166,7 +172,6 @@ def get_lot_info(url: str) -> dict:
     
 	lot["pictures"] = [f"https://xn----etbpba5admdlad.xn--p1ai/{i['data-src']}" 
 							for i in html.findAll("img", {"class": "lot-gallery__img owl-lazy"})]
-            
 	return lot
 
 
@@ -206,4 +211,3 @@ class WebWorker:
 			if len(self._lots) < 25 and self._is_page_ends is False:
 				self.next_page()
 		return get_from_ram
-

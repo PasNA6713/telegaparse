@@ -60,7 +60,7 @@ def get_dict():
             "markets": markets
             }
 
-	"""save dict unto .json"""
+	"""save dict into .json"""
 	with open("settings.json", 'w') as f:
 		json.dump(catalog, f, indent=4, ensure_ascii=False)
 

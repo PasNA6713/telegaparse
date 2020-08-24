@@ -2,6 +2,7 @@ import telebot
 from telebot import types
 import json
 
+
 bot = telebot.TeleBot('1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50')
 
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
@@ -36,15 +37,22 @@ def make_back_from_menu(call):
                           reply_markup=keyboard_menu)
 
 
-def accepted(message):
+def accepted(message, menu=True):
     message = bot.send_message(chat_id=message.chat.id, text='Принято')
-    bot.edit_message_text(text="Что-то еще настроим?", chat_id=message.chat.id, message_id=message.message_id,
+    if menu:
+        bot.edit_message_text(text="Что-то еще настроим?", chat_id=message.chat.id, message_id=message.message_id,
                           reply_markup=keyboard_menu)
+    else:
 
 
-def get_price(message):
+
+def get_price(second_step, message):
     if message.text.isdigit():
-        accepted(message)
+        if second_step:
+            accepted(message, False)
+        else:
+            accepted(message)
+ 
     else:
         message = bot.send_message(chat_id=message.chat.id, text='Не принято')
         bot.edit_message_text(text="Введена некорректная стоимость! Введите ее заново", chat_id=message.chat.id,
@@ -52,15 +60,22 @@ def get_price(message):
                               reply_markup=keyboard_menu)
 
 
-def make_price(call, start_price=True):
+def make_price(call, start_price=True, second_step=False):
     if start_price:
-        message = bot.edit_message_text(text="Введи стартовую стоимость", chat_id=call.message.chat.id,
-                                        message_id=call.message.message_id)
+        if second_step:
+           text = "Введи стартовую стоимость (от)"
+        else:
+           text = "Введи стартовую стоимость (до)"
     else:
-        message = bot.edit_message_text(text="Введи конечную стоимость", chat_id=call.message.chat.id,
-                                        message_id=call.message.message_id)
+        if second_step:
+           text = "Введи конечную стоимость (от)"
+        else:
+           text = "Введи конечную стоимость (до)"
 
-    bot.register_next_step_handler(message, get_price)
+    message = bot.edit_message_text(text=text, chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id)
+    bot.register_next_step_handler(message, lambda msg: get_price(second_step, msg))
+    
 
 
 def make_text_query(call):
@@ -72,7 +87,7 @@ def make_text_query(call):
 class User:
 
     def __init__(self):
-        with open("template_params.json", 'r') as file:
+        with open("temlate_params2.json", 'r') as file:
             template_params = json.load(file)
         self.params = template_params.copy()
         self.changed = False
@@ -81,17 +96,29 @@ class User:
     def make_menu_from_districts(self, call):
         keys_lst = []
         keyboard_filter_params = types.InlineKeyboardMarkup(row_width=2)
-
+        
         for district in self.params.get("districts"):
-            if self.params.get("districts").get(district).get("code") == call.data.split("_")[2]:
-                selected_regions = self.params.get("districts").get(district).get("regions")
-                break
+            if "query" in call.data:
+                if self.params.get("districts").get(district).get("code") == call.data.split("_")[2]:
+                    selected_regions = self.params.get("districts").get(district).get("regions")
+                    break
+            else:
+                for district in self.params.get("districts"):  
+                     if int(call.data.split("_")[1]) in self.params.get("districts").get(district).get("regions"):
+                         selected_regions = self.params.get("districts").get(district).get("regions") 
+                
 
         for region in self.params.get("regions"):
-            if int(self.params.get("regions").get(region)[0]) in selected_regions:
-                key = types.InlineKeyboardButton(text=region,
+           if int(self.params.get("regions").get(region)[0]) in selected_regions:
+              if self.params.get("regions").get(region)[1]:
+                  btn_text = f"✅{region}"
+              else:
+                  btn_text = region
+              key = types.InlineKeyboardButton(text=btn_text,
                                                  callback_data=f"btnRegions_{self.params.get('regions').get(region)[0]}")
-                keys_lst.append(key)
+                
+              keys_lst.append(key)
+          
 
         key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
         keys_lst.append(key)
@@ -162,25 +189,40 @@ def callback_worker(call):
             make_back_from_menu(call)
         elif call.data.split("_")[0] == "btnCategories" or call.data.split("_")[0] == "btnMarkets" \
             or call.data.split("_")[0] == "btnRegions":
+            additional_fp = ''
             current_name = ''
             filter_parameter = call.data.split("_")[0][3:].lower()
-            if call.data.split("_")[0] == "btnRegions":
-                for district in current_user.params.get("districts"):
-                    if call.data.split("_")[2] in current_user.params.get("districts").get(district).get("regions"):
-                        additional_fp =
-                        break
 
-            current_params = current_user.params.get(f"{filter_parameter}")
-            for k, v in current_params.items():
-                if str(v[0]) == call.data.split("_")[1]:
-                    current_name = k
-                    break
-            if not current_user.params.get(f"{filter_parameter}").get(current_name)[1]:
-                current_user.params[f"{filter_parameter}"][current_name][1] = True
-                current_user.make_menu(call)
+            if call.data.split("_")[0] == "btnRegions":
+                for district in current_user.params.get("districts"):  
+                    if int(call.data.split("_")[1]) in current_user.params.get("districts").get(district).get("regions"):
+                        additional_fp = current_user.params.get("districts").get(district).get("regions") 
+                        
+                        break
+            if not additional_fp:
+                current_params = current_user.params.get(f"{filter_parameter}")
+                for k, v in current_params.items():
+                    if str(v[0]) == call.data.split("_")[1]:
+                        current_name = k
+                        break
+                if not current_user.params.get(f"{filter_parameter}").get(current_name)[1]:
+                    current_user.params[f"{filter_parameter}"][current_name][1] = True
+                    current_user.make_menu(call)
+                else:
+                    current_user.params[f"{filter_parameter}"][current_name][1] = False
+                    current_user.make_menu(call)
             else:
-                current_user.params[f"{filter_parameter}"][current_name][1] = False
-                current_user.make_menu(call)
+                current_params = current_user.params.get("regions")
+                for k, v in current_params.items():
+                    if str(v[0]) == call.data.split("_")[1] and int(v[0]) in additional_fp:
+                        current_name = k
+                        break
+                if not current_user.params.get("regions").get(current_name)[1]:
+                    current_user.params["regions"][current_name][1] = True
+                    current_user.make_menu_from_districts(call)
+                else:
+                    current_user.params["regions"][current_name][1] = False
+                    current_user.make_menu_from_districts(call)
 
     else:
         bot.send_message(chat_id=call.message.chat.id, text='Введите /start')

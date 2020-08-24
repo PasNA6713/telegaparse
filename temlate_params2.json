@@ -791,5 +791,13 @@
             "49",
             false
         ]
+    },
+    "start_price": {
+	    "from": 0,
+	    "to": 0
+    },
+    "current_price": {
+	    "from": 0,
+	    "to": 0
     }
 }

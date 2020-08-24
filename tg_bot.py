@@ -3,7 +3,7 @@ from telebot import types
 import json
 
 
-bot = telebot.TeleBot('1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50')
+bot = telebot.TeleBot('PASSWORD')
 
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
 key_markets = types.InlineKeyboardButton(text='Площадки', callback_data='markets_query')

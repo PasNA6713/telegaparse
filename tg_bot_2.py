@@ -5,7 +5,7 @@ from web_worker import WebWorker as WebWorker
 from gen_filter_params import *
 from tg_post import *
 
-bot = telebot.TeleBot('1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50')
+bot = telebot.TeleBot('')
 
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
 key_markets = types.InlineKeyboardButton(text='Площадки', callback_data='markets_query')

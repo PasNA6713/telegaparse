@@ -1,11 +1,16 @@
 import telebot
 from telebot import types
-from imports import *
-from web_worker import WebWorker as WebWorker
-from gen_filter_params import *
+
 from tg_post import *
 
-bot = telebot.TeleBot('')
+import sys, os
+from dotenv import load_dotenv
+load_dotenv(".env")
+sys.path.append('parser/')
+from web_worker import *
+
+
+bot = telebot.TeleBot(os.getenv("BOT_KEY"))
 
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
 key_markets = types.InlineKeyboardButton(text='Площадки', callback_data='markets_query')
@@ -44,8 +49,7 @@ user_data = {}
 
 def draw(lots_info_list):
     for i in lots_info_list:
-        print(i)
-        return create_post(i)
+        print(create_post(i))
 
 
 def make_back_from_menu(call):
@@ -71,7 +75,7 @@ class User:
         self.params = template_params.copy()
         self.filter = filter_params.copy()
         self.changed = False
-        self.webWorker = WebWorker()
+        self.webWorker = ""
 
     def get_price_start_from(self, message):
         if message.text.isdigit():
@@ -250,17 +254,18 @@ def callback_worker(call):
                             current_user.filter["districts"].append(
                                 current_user.params.get("districts").get(district).get("code"))
                             continue
-            # print(current_user.filter)
 
-            current_user.webWorker = WebWorker(current_user.filter)
+            if current_user.changed or current_user.webWorker == "":
+                current_user.webWorker = WebWorker(current_user.filter)
+                current_user.changed = False
             drawn = current_user.webWorker.get_lots_info(draw)
-            print(current_user.webWorker._lots_info)
-            while current_user.webWorker._lots_info:
-                print("drawn", drawn())
+            drawn()
+
 
         elif call.data == "search_query_text":
             current_user.make_text_query(call)
         elif call.data == "back_menu":
+            current_user.changed = True
             make_back_from_menu(call)
         elif call.data.split("_")[0] == "btnCategories" or call.data.split("_")[0] == "btnMarkets" \
                 or call.data.split("_")[0] == "btnRegions":

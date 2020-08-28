@@ -3,7 +3,8 @@ from telegraph import Telegraph
 telegraph = Telegraph()
 telegraph.create_account(short_name='1337')
 
-def create_post(lot_info: dict) -> str:
+
+def create_post(lot: dict) -> str:
 
     try:
         picture = lot["pictures"][0]

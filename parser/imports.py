@@ -16,8 +16,8 @@ class retry:
 				return result
 			except requests.exceptions.ConnectionError:
 				print("Failed")
-				tries -= 1
-				if tries:
+				self.tries -= 1
+				if self.tries:
 					process(try_number, *args, **kwargs)
 				else:
 					print ("\nCan not parse, check your net connection")

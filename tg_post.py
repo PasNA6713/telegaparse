@@ -4,9 +4,15 @@ telegraph = Telegraph()
 telegraph.create_account(short_name='1337')
 
 def create_post(lot_info: dict) -> str:
+
+    try:
+        picture = lot["pictures"][0]
+    except Exception as e:
+        picture = ""
+
     response = telegraph.create_page(
         f"Цена - {lot['cost']['current']}, {lot['description']['title']}",
-        html_content=f'<img src="{lot["pictures"][0]}">'+
+        html_content=f'<img src="{picture}" alt="Изображение товара отсутсвует">'+
         f"<p><strong>Место осмотра {lot['region']}</strong></p>"+
         f"<p><strong>{lot['bidding_type']}</strong></p>" +
         f"<p>{lot['description']['full']}</p>" +

@@ -202,9 +202,9 @@ class WebWorker:
 		Extend lot's info and call self.next_page() if we have lesser then 25 links in self.lots
 		Do nothing if lots and pages ends
 		"""
-		def get_from_ram(number_of_lots: int = number_of_lots):
+		def get_from_ram(*args, number_of_lots: int = number_of_lots, **kwargs):
 			# draw number_of_lots lots
-			func([self._lots_info.popleft() for i in range(number_of_lots) if self._lots_info])
+			func([self._lots_info.popleft() for i in range(number_of_lots) if self._lots_info], *args, **kwargs)
 			# get new lots
 			self._lots_info.extend([get_lot_info(self._lots.popleft()) for i in range(number_of_lots) if self._lots])
 			# get lots from new page if it needs

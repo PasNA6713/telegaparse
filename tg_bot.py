@@ -3,12 +3,14 @@ from telebot import types
 
 from tg_post import *
 
-import sys
+import sys, os
+from dotenv import load_dotenv
+load_dotenv(".env")
 sys.path.append('parser/')
 from web_worker import *
 
 
-bot = telebot.TeleBot('1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50')
+bot = telebot.TeleBot(os.getenv("BOT_KEY"))
 
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
 key_markets = types.InlineKeyboardButton(text='Площадки', callback_data='markets_query')
@@ -45,9 +47,9 @@ keyboard_prices_current.add(key_1, key_2)
 user_data = {}
 
 
-def draw(lots_info_list):
+def draw(lots_info_list, id):
     for i in lots_info_list:
-        print(create_post(i))
+        bot.send_message(chat_id=id, text=create_post(i))
 
 
 def make_back_from_menu(call):
@@ -257,7 +259,8 @@ def callback_worker(call):
                 current_user.webWorker = WebWorker(current_user.filter)
                 current_user.changed = False
             drawn = current_user.webWorker.get_lots_info(draw)
-            drawn()
+            drawn(id = call.message.chat.id)
+
 
         elif call.data == "search_query_text":
             current_user.make_text_query(call)

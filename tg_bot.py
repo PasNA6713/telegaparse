@@ -13,6 +13,8 @@ from web_worker import *
 
 
 bot = telebot.TeleBot(os.getenv("BOT_KEY"))
+# bot = telebot.TeleBot("1225070960:AAEST2WsWFmScFepQBA6mOh-4cDQVQVoEE4")
+# bot = telebot.TeleBot("1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50")
 
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
 key_markets = types.InlineKeyboardButton(text='Площадки', callback_data='markets_query')
@@ -54,28 +56,36 @@ def like_telegraph(lot, id):
         picture = lot["pictures"]
     except Exception as e:
         picture = ""
+    print("lot: ", lot)
+    try:
+        full_description = lot.get('description').get('full')
+        if len(full_description) > 2817:
+            full_description = ""
 
-    full_description = lot['description']['full']
-    if len(full_description) > 2817:
-        full_description = ""
+        msg = f"<strong>Цена - {lot['cost']['current']}, {lot['description']['title']}</strong>" + '\n\n'\
+        f"{lot['bidding_type']}" + '\n\n'\
+        f"{full_description}" + '\n\n' \
+        f"Место осмотра: {lot['region']}" + '\n\n'\
+        f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n'\
+        f"Дата начала представления заявок на участие: {lot['date']['start_bid']}" + '\n\n'\
+        f"Дата окончания представления заявок на участие: {lot['date']['end_bid']}" + '\n\n'\
+        f"Начальная цена, руб.: {lot['cost']['current']}" + '\n\n'\
+        f"Шаг цены: {lot['cost']['step']}"
+    except:
+        msg = 'Ошибка при загрузке! Устранение ошибок в разработке!'
 
-    msg = f"<strong>Цена - {lot['cost']['current']}, {lot['description']['title']}</strong>" + '\n\n'\
-    f"{lot['bidding_type']}" + '\n\n'\
-    f"{full_description}" + '\n\n' \
-    f"Место осмотра: {lot['region']}" + '\n\n'\
-    f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n'\
-    f"Дата начала представления заявок на участие: {lot['date']['start_bid']}" + '\n\n'\
-    f"Дата окончания представления заявок на участие: {lot['date']['end_bid']}" + '\n\n'\
-    f"Начальная цена, руб.: {lot['cost']['current']}" + '\n\n'\
-    f"Шаг цены: {lot['cost']['step']}"
-
-    media = [InputMediaPhoto(i) for i in picture]
-    if media:
-        bot.send_media_group(chat_id=id, media=media[:5])
+    try:
+        media = [InputMediaPhoto(i) for i in picture]
+        if media:
+            bot.send_media_group(chat_id=id, media=media[:5])
+    except:
+        pass
+        # print("Error albom")
     return msg
 
 
 def draw(lots_info_list, id):
+    bot.send_message(id, text="Пожалуйста, подождите. Загрузка может занять время🎲...")
     keyboard_search = types.InlineKeyboardMarkup(row_width=1)
     key_find = types.InlineKeyboardButton(text='Да', callback_data='search_query')
     keyboard_search.add(key_find)
@@ -84,12 +94,19 @@ def draw(lots_info_list, id):
         bot.send_message(chat_id=id, text=like_telegraph(i, id), parse_mode='html')
         msg = bot.send_message(chat_id=id, text="Контакты")
 
-        keyboard_contacts = types.InlineKeyboardMarkup(row_width=2)
-        key_to_buy = types.InlineKeyboardButton(text='Задать вопрос или купить', callback_data="adm")
-        keyboard_contacts.add(key_to_buy)
+        try:
+            user_data[id].params["urls"][user_data.get(id).counter] = i.get("marketplace").get("url")
+            keyboard_contacts = types.InlineKeyboardMarkup(row_width=2)
+            key_to_buy = types.InlineKeyboardButton(text='Да', callback_data=f"adm_{user_data.get(id).counter}")
+            user_data[id].counter += 1
+            keyboard_contacts.add(key_to_buy)
 
-        bot.edit_message_text(text='Контакты', chat_id=id, message_id=msg.message_id,
-                              reply_markup=keyboard_contacts)
+            bot.edit_message_text(text='Хотите задать вопрос?', chat_id=id, message_id=msg.message_id,
+                                  reply_markup=keyboard_contacts)
+        except:
+            bot.send_message(chat_id=id, text="Ошибка")
+            bot.edit_message_text(text='Настройте фильтр', chat_id=id, message_id=msg.message_id,
+                                  reply_markup=keyboard_menu)
     if lots_info_list:
         msg = bot.send_message(chat_id=id, text="Загрузить еще лоты")
         bot.edit_message_text(text='Загрузить еще лоты?', chat_id=id, message_id=msg.message_id, reply_markup=keyboard_search)
@@ -97,6 +114,8 @@ def draw(lots_info_list, id):
     else:
         time.sleep(2)
         bot.send_message(chat_id=id, text="Все лоты по фильтру загружены!🎈")
+        print(lots_info_list)
+        print(user_data.get(id).filter)
         bot.send_message(id, text="Настройте новый фильтр", reply_markup=keyboard_menu)
 
 
@@ -118,12 +137,13 @@ class User:
     def __init__(self):
         with open("template_params.json", 'r', encoding='utf-8') as file:
             template_params = json.load(file)
-        with open("filter_template2.json", 'r', encoding='utf-8') as file2:
+        with open("filter_template.json", 'r', encoding='utf-8') as file2:
             filter_params = json.load(file2)
         self.params = template_params.copy()
         self.filter = filter_params.copy()
         self.changed = False
         self.webWorker = ""
+        self.counter = 0
 
     def get_price_start_from(self, message):
         if message.text.isdigit():
@@ -272,8 +292,8 @@ def get_start(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     current_user = user_data.get(call.message.chat.id)
-    print(call.message.chat.id)
-    print(call.data)
+    # print(call.message.chat.id)
+    # print(call.data)
     if current_user:
         if call.data == "markets_query" or call.data == "categories_query":
             current_user.make_menu(call)
@@ -311,6 +331,10 @@ def callback_worker(call):
             drawn = current_user.webWorker.get_lots_info(draw)
             drawn(id = call.message.chat.id)
 
+            try:
+                print(call.message.chat.id)
+            except:
+                pass
         elif call.data == "search_query_text":
             current_user.make_text_query(call)
 
@@ -318,13 +342,24 @@ def callback_worker(call):
             current_user.changed = True
             make_back_from_menu(call)
 
-        elif call.data == "adm":
+
+
+        elif "adm" in call.data:
             keyboard_to_admin = types.InlineKeyboardMarkup(row_width=1)
-            key_to_admin = types.InlineKeyboardButton(text='Задать вопрос или купить', url="https://t.me/olegBurn2154")
+            key_to_admin = types.InlineKeyboardButton(text='Агент', url="https://t.me/olegBurn2154")
             keyboard_to_admin.add(key_to_admin)
-            url = call.data.split("_")[1]
-            bot.send_message(chat_id=call.message.chat.id, text="Открыть чат с продавцом", reply_markup=keyboard_to_admin)
+            # print(call.data)
+            url_number = call.data.split("_")[1]
+
+            url = current_user.params.get("urls").get(int(url_number))
+            # print("url: ", url)
+            # print("number_url:", url_number)
+            # print(current_user.params.get("urls"))
+
+            bot.send_message(chat_id=call.message.chat.id, text="📞️", reply_markup=keyboard_to_admin)
             bot.send_message(chat_id=695410130, text=url)
+
+
 
         elif call.data.split("_")[0] == "btnCategories" or call.data.split("_")[0] == "btnMarkets" \
                 or call.data.split("_")[0] == "btnRegions":
@@ -381,4 +416,6 @@ def callback_worker(call):
     user_data[call.message.chat.id] = current_user
 
 
-bot.polling(none_stop=True, interval=0)
+bot.polling(none_stop=True)
+
+# 196556991

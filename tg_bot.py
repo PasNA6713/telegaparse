@@ -1,5 +1,7 @@
 import telebot
 from telebot import types
+from telebot.types import InputMediaPhoto
+import time
 
 from tg_post import *
 
@@ -47,9 +49,55 @@ keyboard_prices_current.add(key_1, key_2)
 user_data = {}
 
 
+def like_telegraph(lot, id):
+    try:
+        picture = lot["pictures"]
+    except Exception as e:
+        picture = ""
+
+    full_description = lot['description']['full']
+    if len(full_description) > 2817:
+        full_description = ""
+
+    msg = f"<strong>Цена - {lot['cost']['current']}, {lot['description']['title']}</strong>" + '\n\n'\
+    f"{lot['bidding_type']}" + '\n\n'\
+    f"{full_description}" + '\n\n' \
+    f"Место осмотра: {lot['region']}" + '\n\n'\
+    f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n'\
+    f"Дата начала представления заявок на участие: {lot['date']['start_bid']}" + '\n\n'\
+    f"Дата окончания представления заявок на участие: {lot['date']['end_bid']}" + '\n\n'\
+    f"Начальная цена, руб.: {lot['cost']['current']}" + '\n\n'\
+    f"Шаг цены: {lot['cost']['step']}"
+
+    media = [InputMediaPhoto(i) for i in picture]
+    if media:
+        bot.send_media_group(chat_id=id, media=media[:5])
+    return msg
+
+
 def draw(lots_info_list, id):
+    keyboard_search = types.InlineKeyboardMarkup(row_width=1)
+    key_find = types.InlineKeyboardButton(text='Да', callback_data='search_query')
+    keyboard_search.add(key_find)
+
     for i in lots_info_list:
-        bot.send_message(chat_id=id, text=create_post(i))
+        bot.send_message(chat_id=id, text=like_telegraph(i, id), parse_mode='html')
+        msg = bot.send_message(chat_id=id, text="Контакты")
+
+        keyboard_contacts = types.InlineKeyboardMarkup(row_width=2)
+        key_to_buy = types.InlineKeyboardButton(text='Задать вопрос или купить', callback_data="adm")
+        keyboard_contacts.add(key_to_buy)
+
+        bot.edit_message_text(text='Контакты', chat_id=id, message_id=msg.message_id,
+                              reply_markup=keyboard_contacts)
+    if lots_info_list:
+        msg = bot.send_message(chat_id=id, text="Загрузить еще лоты")
+        bot.edit_message_text(text='Загрузить еще лоты?', chat_id=id, message_id=msg.message_id, reply_markup=keyboard_search)
+        time.sleep(1)
+    else:
+        time.sleep(2)
+        bot.send_message(chat_id=id, text="Все лоты по фильтру загружены!🎈")
+        bot.send_message(id, text="Настройте новый фильтр", reply_markup=keyboard_menu)
 
 
 def make_back_from_menu(call):
@@ -224,6 +272,8 @@ def get_start(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     current_user = user_data.get(call.message.chat.id)
+    print(call.message.chat.id)
+    print(call.data)
     if current_user:
         if call.data == "markets_query" or call.data == "categories_query":
             current_user.make_menu(call)
@@ -261,12 +311,21 @@ def callback_worker(call):
             drawn = current_user.webWorker.get_lots_info(draw)
             drawn(id = call.message.chat.id)
 
-
         elif call.data == "search_query_text":
             current_user.make_text_query(call)
+
         elif call.data == "back_menu":
             current_user.changed = True
             make_back_from_menu(call)
+
+        elif call.data == "adm":
+            keyboard_to_admin = types.InlineKeyboardMarkup(row_width=1)
+            key_to_admin = types.InlineKeyboardButton(text='Задать вопрос или купить', url="https://t.me/olegBurn2154")
+            keyboard_to_admin.add(key_to_admin)
+            url = call.data.split("_")[1]
+            bot.send_message(chat_id=call.message.chat.id, text="Открыть чат с продавцом", reply_markup=keyboard_to_admin)
+            bot.send_message(chat_id=695410130, text=url)
+
         elif call.data.split("_")[0] == "btnCategories" or call.data.split("_")[0] == "btnMarkets" \
                 or call.data.split("_")[0] == "btnRegions":
             additional_fp = ''

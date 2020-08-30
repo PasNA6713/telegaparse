@@ -185,7 +185,7 @@ class WebWorker:
 		self._is_page_ends = False
 
 		self._lots = deque(self._cur_page.goods) # deque of lot's links
-		self._lots_info = deque([get_lot_info(self._lots.popleft()) for i in range(8) if self._lots]) # deque of lot's info
+		self._lots_info = deque([get_lot_info(self._lots.popleft()) for i in range(4) if self._lots]) # deque of lot's info
         
 
 	def next_page(self):
@@ -197,17 +197,20 @@ class WebWorker:
 			self._is_page_ends = True
     
 
-	def get_lots_info(self, func, number_of_lots: int = 4):
+	def get_lots_info(self, number_of_lots: int = 4):
 		"""
 		Extend lot's info and call self.next_page() if we have lesser then 25 links in self.lots
 		Do nothing if lots and pages ends
 		"""
-		def get_from_ram(*args, number_of_lots: int = number_of_lots, **kwargs):
-			# draw number_of_lots lots
-			func([self._lots_info.popleft() for i in range(number_of_lots) if self._lots_info], *args, **kwargs)
-			# get new lots
-			self._lots_info.extend([get_lot_info(self._lots.popleft()) for i in range(number_of_lots) if self._lots])
-			# get lots from new page if it needs
-			if len(self._lots) < 25 and self._is_page_ends is False:
-				self.next_page()
-		return get_from_ram
+		for i in range(number_of_lots): 
+			if self._lots_info:
+				yield self._lots_info.popleft()
+
+				while len(self._lots_info) < number_of_lots*2:
+					if self._lots:
+						self._lots_info.append(get_lot_info(self._lots.popleft()))
+					else: 
+						break
+
+				if len(self._lots) < 25 and self._is_page_ends is False:
+					self.next_page()

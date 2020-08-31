@@ -5,3 +5,5 @@ __pycache__
 *.ipynb
 *.pytest*
 *.env
+*.xml
+.idea/telegaparse.iml

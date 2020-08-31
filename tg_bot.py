@@ -1,19 +1,20 @@
 import telebot
 from telebot import types
 from telebot.types import InputMediaPhoto
-import time
 
 import sys, os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
+
 # include .env file
-load_dotenv(".env")
+# load_dotenv(".env")
 # now we can import from ./parser dir
 sys.path.append('parser/')
 from web_worker import *
 
-load telegram API key fron .env
-bot = telebot.TeleBot(os.getenv("MY_KEY"))
-# bot = telebot.TeleBot("1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50")
+# load telegram API key fron .env
+# bot = telebot.TeleBot(os.getenv("MY_KEY"))
+# bot = telebot.TeleBot("1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50")  # Wallet burn
+bot = telebot.TeleBot("1225070960:AAEST2WsWFmScFepQBA6mOh-4cDQVQVoEE4")  # ClientBot
 
 # all user's data using the TG-bot
 user_data = {}
@@ -47,42 +48,54 @@ keyboard_prices_current = types.InlineKeyboardMarkup(row_width=2)
 key_1 = types.InlineKeyboardButton(text='Текущая цена (от)', callback_data='current_query_from')
 key_2 = types.InlineKeyboardButton(text='Текущая цена (до)', callback_data='current_query_to')
 keyboard_prices_current.add(key_1, key_2)
+keyboard_lots = types.InlineKeyboardMarkup(row_width=1)
+key_search_2 = types.InlineKeyboardButton(text='Загрузить еще', callback_data='search')
+keyboard_lots.add(key_search_2)
+
 
 # function for loading of lot's info
 def print_lot(lot, chat_id):
-	"""send lot info to user"""
-	# check errors
-	if isinstance(lot, dict) == False:
-		return None
+    """send lot info to user"""
+    # check errors
+    if isinstance(lot, dict) == False:
+        return None
+
+    flag = lot.get("cost").get("flag")
+    if flag == "up":
+        flag = "🟢"
+    elif flag == "down":
+        flag = "🔴"
+    elif flag == "commercial":
+        flag = "🟠"
 
 
-	# make message text
-	full_description = lot.get('description').get('full')[:1200]+"..."
-	msg = f"<strong>Цена - {lot['cost']['current']}, {lot['description']['title']}</strong>" + '\n\n'\
-	f"{lot['bidding_type']}" + '\n\n'\
-	f"{full_description}" + '\n\n' \
-	f"Место осмотра: {lot['region']}" + '\n\n'\
-	f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n'\
-	f"Дата начала представления заявок на участие: {lot['date']['start_bid']}" + '\n\n'\
-	f"Дата окончания представления заявок на участие: {lot['date']['end_bid']}" + '\n\n'\
-	f"Начальная цена, руб.: {lot['cost']['current']}" + '\n\n'\
-	f"Шаг цены: {lot['cost']['step']}"
+    # make message text
+    full_description = lot.get('description').get('full')[:1200] + "..."
+    msg = f"<strong>Цена - {lot['cost']['current']}, {lot['description']['title']}</strong> " + flag + '\n\n' \
+                                                                    f"{lot['bidding_type']}" + '\n\n' \
+                                                                    f"{full_description}" + '\n\n' \
+                                                                    f"Место осмотра: {lot['region']}" + '\n\n' \
+                                                                    f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n' \
+                                                                                                                                                                                                                                            f"Дата начала представления заявок на участие: {lot['date']['start_bid']}" + '\n\n' \
+                                                                                                                                                                                                                                                                                                                         f"Дата окончания представления заявок на участие: {lot['date']['end_bid']}" + '\n\n' \
+                                                                                                                                                                                                                                                                                                                                                                                                       f"Начальная цена, руб.: {lot['cost']['current']}" + '\n\n' \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                           f"Шаг цены: {lot['cost']['step']}"
 
-	# make album with photo
-	media = [InputMediaPhoto(i) for i in lot["pictures"] if lot["pictures"]]
-	if media:
-		bot.send_media_group(chat_id=chat_id, media=media[:5])
-	bot.send_message(chat_id=chat_id, text = msg, parse_mode="html")
+    # make album with photo
+    media = [InputMediaPhoto(i) for i in lot["pictures"] if lot["pictures"]]
+    if media:
+        bot.send_media_group(chat_id=chat_id, media=media[:5])
+    bot.send_message(chat_id=chat_id, text=msg, parse_mode="html")
 
-	"""contact button"""
-	keyboard_contacts = types.InlineKeyboardMarkup()
+    """contact button"""
+    keyboard_contacts = types.InlineKeyboardMarkup()
 
-	user_data[chat_id].params["urls"][user_data.get(chat_id).counter] = lot.get("marketplace").get("url")
-	user_data[chat_id].counter += 1
+    user_data[chat_id].params["urls"][user_data.get(chat_id).counter] = lot.get("marketplace").get("url")
+    user_data[chat_id].counter += 1
 
-	key_to_buy = types.InlineKeyboardButton(text='Связаться', callback_data=f"adm_{user_data.get(chat_id).counter}")
-	keyboard_contacts.add(key_to_buy)
-	bot.send_message(text='Связаться с агентом', chat_id=chat_id, reply_markup=keyboard_contacts)
+    key_to_buy = types.InlineKeyboardButton(text='Связаться', callback_data=f"adm_{user_data.get(chat_id).counter}")
+    keyboard_contacts.add(key_to_buy)
+    bot.send_message(text='Связаться с агентом', chat_id=chat_id, reply_markup=keyboard_contacts)
 
 
 # function of a button "Назад" from menu
@@ -92,11 +105,13 @@ def make_back_from_menu(call):
     bot.edit_message_text(text="Настрой фильтр", chat_id=call.message.chat.id, message_id=call.message.message_id,
                           reply_markup=keyboard_menu)
 
+
 # simple alert function
 def accepted(message):
     message = bot.send_message(chat_id=message.chat.id, text='Принято')
     bot.edit_message_text(text="Что-то еще настроим?", chat_id=message.chat.id, message_id=message.message_id,
                           reply_markup=keyboard_menu)
+
 
 # one of users of TG-bot
 class User:
@@ -115,7 +130,7 @@ class User:
     def get_price_start_from(self, message):
         if message.text.isdigit():
             accepted(message)
-            self.filter["start_price"]["from"] = message.text
+            self.filter["start price"]["from"] = message.text
         else:
             message = bot.send_message(chat_id=message.chat.id, text='Не принято')
             bot.edit_message_text(text="Введена некорректная стоимость! Введите ее заново", chat_id=message.chat.id,
@@ -125,7 +140,7 @@ class User:
     def get_price_start_to(self, message):
         if message.text.isdigit():
             accepted(message)
-            self.filter["start_price"]["to"] = message.text
+            self.filter["start price"]["to"] = message.text
         else:
             message = bot.send_message(chat_id=message.chat.id, text='Не принято')
             bot.edit_message_text(text="Введена некорректная стоимость! Введите ее заново", chat_id=message.chat.id,
@@ -135,7 +150,7 @@ class User:
     def get_price_current_from(self, message):
         if message.text.isdigit():
             accepted(message)
-            self.filter["current_price"]["from"] = message.text
+            self.filter["current price"]["from"] = message.text
         else:
             message = bot.send_message(chat_id=message.chat.id, text='Не принято')
             bot.edit_message_text(text="Введена некорректная стоимость! Введите ее заново", chat_id=message.chat.id,
@@ -145,7 +160,7 @@ class User:
     def get_price_current_to(self, message):
         if message.text.isdigit():
             accepted(message)
-            self.filter["current_price"]["to"] = message.text
+            self.filter["current price"]["to"] = message.text
         else:
             message = bot.send_message(chat_id=message.chat.id, text='Не принято')
             bot.edit_message_text(text="Введена некорректная стоимость! Введите ее заново", chat_id=message.chat.id,
@@ -249,214 +264,238 @@ class User:
 
 @bot.message_handler(commands=['start'])
 def get_start(message):
-	"""start message handler"""
-	bot.send_message(message.from_user.id, text="Добро пожаловать в Торги по банкротству РФ!", reply_markup=keyboard_menu)
-	user_data[message.chat.id] = User()
-	user_data[message.chat.id].params["username"] = message.from_user.username
-	print(message.chat.id)
-	print(message.from_user.username)
+    """start message handler"""
+    bot.send_message(message.from_user.id, text="Добро пожаловать в Торги по банкротству РФ!",
+                     reply_markup=keyboard_menu)
+    user_data[message.chat.id] = User()
+    user_data[message.chat.id].params["username"] = message.from_user.username
+    print(message.chat.id)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-	# "search" pressed
-	current_user = user_data.get(call.message.chat.id)
-	# if user has pressed start (checking)
-	if current_user:
-		if call.data == "search":
-			for district in current_user.params.get("districts"):
+    current_user = user_data.get(call.message.chat.id)
+    # if user has pressed start (checking)
+    if current_user:
+        # "search" pressed
+        print(call.data)
+        if call.data == "search":
+            try:
+                for district in current_user.params.get("districts"):
 
-				for region in current_user.params.get("districts").get(district).get("regions"):
+                    for region in current_user.params.get("districts").get(district).get("regions"):
 
-					if str(region) in current_user.filter.get("regions"):
+                        if str(region) in current_user.filter.get("regions"):
 
-						if current_user.params.get("districts").get(district).get("code") not in current_user.filter[
-							"districts"]:
-							current_user.filter["districts"].append(
+                            if current_user.params.get("districts").get(district).get("code") not in current_user.filter[
+                                "districts"]:
+                                current_user.filter["districts"].append(
 
-								current_user.params.get("districts").get(district).get("code"))
+                                    current_user.params.get("districts").get(district).get("code"))
 
-							continue
+                                continue
 
-			if current_user.changed or current_user.web_worker == "":
-				current_user.web_worker = WebWorker(current_user.filter)
+                if current_user.changed or current_user.web_worker == "":
+                    current_user.web_worker = WebWorker(current_user.filter)
 
-				current_user.changed = False
+                    current_user.changed = False
 
-				if current_user.web_worker._lots_info:
-					for i in current_user.web_worker.get_lots_info():
-						print_lot(i, call.message.chat.id)
+                if current_user.web_worker._lots_info:
+                    for i in current_user.web_worker.get_lots_info():
+                        print_lot(i, call.message.chat.id)
+                    # load menu keyboard
+                    bot.send_message(call.message.chat.id, text="Еще немного лотов?", reply_markup=keyboard_lots)
+                    bot.send_message(call.message.chat.id, text="Изменить параметры фильтра?", reply_markup=keyboard_menu)
+                else:
+                    bot.send_message(call.message.chat.id, text="Кажется, лоты закончились :(")
+                print(current_user.filter, "\n")
+            except Exception as e:
+                print(e)
+                bot.send_message(call.message.chat.id, text="Слишком много запросов...Попробуйте позже, пожалуйста", reply_markup=keyboard_menu)
 
-					# load menu keyboard
-					bot.send_message(call.message.chat.id, text="Еще немного лотов?", reply_markup=keyboard_menu)
-				else:
-					bot.send_message(call.message.chat.id, text="Кажется, лоты закончились :(")
 
-		# if was pressed "Категории" or "Площадки"
-		elif call.data == "markets_query" or call.data == "categories_query":
+        # if was pressed "Категории" or "Площадки"
+        elif call.data == "markets_query" or call.data == "categories_query":
 
-			current_user.make_menu(call)
+            current_user.make_menu(call)
 
 
-		# if was pressed "Регионы"
-		elif call.data == "districts_query":
+        # if was pressed "Регионы"
+        elif call.data == "districts_query":
 
-			bot.edit_message_text(text='Выбери округ', chat_id=call.message.chat.id, message_id=call.message.message_id,
+            bot.edit_message_text(text='Выбери округ', chat_id=call.message.chat.id, message_id=call.message.message_id,
 
-								  reply_markup=keyboard_districts)
+                                  reply_markup=keyboard_districts)
 
-		# after was pressed "Регионы" and pressed an each appeared button
-		elif "regions_query" in call.data:
+        # after was pressed "Регионы" and pressed an each appeared button
+        elif "regions_query" in call.data:
 
-			current_user.make_menu_from_districts(call)
+            current_user.make_menu_from_districts(call)
 
-		# if was pressed "Начальная стоимость"
-		elif call.data == "start_price_query":
+        # if was pressed "Начальная стоимость"
+        elif call.data == "start_price_query":
 
-			bot.edit_message_text(text='Выбери', chat_id=call.message.chat.id, message_id=call.message.message_id,
+            bot.edit_message_text(text='Выбери', chat_id=call.message.chat.id, message_id=call.message.message_id,
 
-								  reply_markup=keyboard_prices_start)
+                                  reply_markup=keyboard_prices_start)
 
-		# if was pressed "Текущая стоимость"
-		elif call.data == "end_price_query":
+        # if was pressed "Текущая стоимость"
+        elif call.data == "end_price_query":
 
-			bot.edit_message_text(text='Выбери', chat_id=call.message.chat.id, message_id=call.message.message_id,
+            bot.edit_message_text(text='Выбери', chat_id=call.message.chat.id, message_id=call.message.message_id,
 
-								  reply_markup=keyboard_prices_current)
+                                  reply_markup=keyboard_prices_current)
 
-		# if was pressed after "Начальная/Текущая стоимость" and after pressed an each button
-		elif "from" in call.data or "to" in call.data:
+        # if was pressed after "Начальная/Текущая стоимость" and after pressed an each button
+        elif "from" in call.data or "to" in call.data:
 
-			current_user.make_price(call)
+            current_user.make_price(call)
 
-		# if was pressed "Поиск по словам"
-		elif call.data == "search_query_text":
+        # if was pressed "Поиск по словам"
+        elif call.data == "search_query_text":
 
-			current_user.make_text_query(call)
+            current_user.make_text_query(call)
 
-		# if was pressed "Назад"
-		elif call.data == "back_menu":
+        # if was pressed "Назад"
+        elif call.data == "back_menu":
 
-			current_user.changed = True
+            current_user.changed = True
 
-			make_back_from_menu(call)
+            make_back_from_menu(call)
 
-		# if was pressed "Связаться"
-		elif "adm" in call.data:
+        # if was pressed "Связаться"
+        elif "adm" in call.data:
 
-			keyboard_to_admin = types.InlineKeyboardMarkup(row_width=1)
+            keyboard_to_admin = types.InlineKeyboardMarkup(row_width=1)
 
-			key_to_admin = types.InlineKeyboardButton(text='Агент', url="https://t.me/olegBurn2154")
+            key_to_admin = types.InlineKeyboardButton(text='Агент', url="https://t.me/Agentbankrot")
 
-			keyboard_to_admin.add(key_to_admin)
+            keyboard_to_admin.add(key_to_admin)
 
-			url_number = int(call.data.split("_")[1]) - 1
+            url_number = int(call.data.split("_")[1]) - 1
 
-			url = current_user.params.get("urls").get(url_number)
+            url = current_user.params.get("urls").get(url_number)
 
-			bot.send_message(chat_id=call.message.chat.id, text="📞️", reply_markup=keyboard_to_admin)
+            bot.send_message(chat_id=call.message.chat.id, text="📞️", reply_markup=keyboard_to_admin)
 
-			bot.send_message(chat_id=548919987, text=url)
-			bot.send_message(chat_id=548919987, text=current_user.params.get("username"))
+            username = current_user.params.get("username")
+            if not username:
+                first_name = call.from_user.first_name
+                if not first_name: first_name = ""
+                last_name = call.from_user.last_name
+                if not last_name: last_name = ""
+                username =  first_name + " " + last_name
+                text_msg = username + " : " + url
+            else:
+                text_msg = "https://t.me/" + username + " : " + url
 
-		# if was pressed an each cell after pressed "Категории", "Площадки", "Регионы"
-		elif call.data.split("_")[0] == "btnCategories" or call.data.split("_")[0] == "btnMarkets" \
- \
-				or call.data.split("_")[0] == "btnRegions":
 
-			additional_fp = ''
+            bot.send_message(chat_id=196556991, text="Интересуется пользователь: "+text_msg)
+            print(call)
+            print("Интересуется пользователь: " + text_msg)
 
-			current_name = ''
 
-			filter_parameter = call.data.split("_")[0][3:].lower()
+        # if was pressed an each cell after pressed "Категории", "Площадки", "Регионы"
+        elif call.data.split("_")[0] == "btnCategories" or \
+                call.data.split("_")[0] == "btnMarkets" or \
+                call.data.split("_")[0] == "btnRegions":
 
-			if call.data.split("_")[0] == "btnRegions":
+            additional_fp = ''
 
-				for district in current_user.params.get("districts"):
+            current_name = ''
 
-					if int(call.data.split("_")[1]) in current_user.params.get("districts").get(district).get(
+            filter_parameter = call.data.split("_")[0][3:].lower()
 
-							"regions"):
-						additional_fp = current_user.params.get("districts").get(district).get("regions")
+            if call.data.split("_")[0] == "btnRegions":
 
-						break
+                for district in current_user.params.get("districts"):
 
-			if not additional_fp:
+                    if int(call.data.split("_")[1]) in current_user.params.get("districts").get(district).get(
 
-				current_params = current_user.params.get(f"{filter_parameter}")
+                            "regions"):
+                        additional_fp = current_user.params.get("districts").get(district).get("regions")
 
-				for k, v in current_params.items():
+                        break
 
-					if str(v[0]) == call.data.split("_")[1]:
-						current_name = k
+            if not additional_fp:
 
-						break
+                current_params = current_user.params.get(f"{filter_parameter}")
 
-				if not current_user.params.get(f"{filter_parameter}").get(current_name)[1]:
+                for k, v in current_params.items():
 
-					current_user.params[f"{filter_parameter}"][current_name][1] = True
+                    if str(v[0]) == call.data.split("_")[1]:
+                        current_name = k
 
-					if current_user.params[f"{filter_parameter}"][current_name][0] not in current_user.filter[
+                        break
 
-						f"{filter_parameter}"]:
-						current_user.filter[f"{filter_parameter}"].append(
+                if not current_user.params.get(f"{filter_parameter}").get(current_name)[1]:
 
-							current_user.params[f"{filter_parameter}"][current_name][0])
+                    current_user.params[f"{filter_parameter}"][current_name][1] = True
 
-					current_user.make_menu(call)
+                    if current_user.params[f"{filter_parameter}"][current_name][0] not in current_user.filter[
 
-				else:
+                        f"{filter_parameter}"]:
+                        current_user.filter[f"{filter_parameter}"].append(
 
-					current_user.params[f"{filter_parameter}"][current_name][1] = False
+                            current_user.params[f"{filter_parameter}"][current_name][0])
 
-					if current_user.params[f"{filter_parameter}"][current_name][0] in current_user.filter[
+                    current_user.make_menu(call)
 
-						f"{filter_parameter}"]:
-						current_user.filter[f"{filter_parameter}"].remove(
+                else:
 
-							current_user.params[f"{filter_parameter}"][current_name][0])
+                    current_user.params[f"{filter_parameter}"][current_name][1] = False
 
-					current_user.make_menu(call)
+                    if current_user.params[f"{filter_parameter}"][current_name][0] in current_user.filter[
 
-			else:
+                        f"{filter_parameter}"]:
+                        current_user.filter[f"{filter_parameter}"].remove(
 
-				current_params = current_user.params.get("regions")
+                            current_user.params[f"{filter_parameter}"][current_name][0])
 
-				for k, v in current_params.items():
+                    current_user.make_menu(call)
 
-					if str(v[0]) == call.data.split("_")[1] and int(v[0]) in additional_fp:
-						current_name = k
+            else:
 
-						break
+                current_params = current_user.params.get("regions")
 
-				if not current_user.params.get("regions").get(current_name)[1]:
+                for k, v in current_params.items():
 
-					current_user.params["regions"][current_name][1] = True
+                    if str(v[0]) == call.data.split("_")[1] and int(v[0]) in additional_fp:
+                        current_name = k
 
-					if current_user.params["regions"][current_name][0] not in current_user.filter["regions"]:
-						current_user.filter["regions"].append(current_user.params["regions"][current_name][0])
+                        break
 
-					current_user.make_menu_from_districts(call)
+                if not current_user.params.get("regions").get(current_name)[1]:
 
-				else:
+                    current_user.params["regions"][current_name][1] = True
 
-					current_user.params["regions"][current_name][1] = False
+                    if current_user.params["regions"][current_name][0] not in current_user.filter["regions"]:
+                        current_user.filter["regions"].append(current_user.params["regions"][current_name][0])
 
-					if current_user.params["regions"][current_name][0] in current_user.filter["regions"]:
-						current_user.filter["regions"].remove(current_user.params["regions"][current_name][0])
+                    current_user.make_menu_from_districts(call)
 
-					current_user.make_menu_from_districts(call)
-	else:
-		bot.send_message(chat_id=call.message.chat.id, text='Введите /start')
+                else:
 
-	# update all current user's data
-	user_data[call.message.chat.id] = current_user
+                    current_user.params["regions"][current_name][1] = False
 
+                    if current_user.params["regions"][current_name][0] in current_user.filter["regions"]:
+                        current_user.filter["regions"].remove(current_user.params["regions"][current_name][0])
 
+                    current_user.make_menu_from_districts(call)
+    else:
+        bot.send_message(chat_id=call.message.chat.id, text='Введите /start')
 
+    # update all current user's data
+    user_data[call.message.chat.id] = current_user
 
+try:
+    bot.polling(none_stop=True)
+except Exception as e:
+    print(e)
+    bot.polling(none_stop=True)
 
 
-bot.polling(none_stop=True)
 
-# 196556991
+# chat_id Клиент 196556991
+# chat_id Никита 548919987
+# chat_id Олега 695410130

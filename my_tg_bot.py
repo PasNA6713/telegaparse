@@ -65,7 +65,6 @@ def print_lot(lot, chat_id):
 	if isinstance(lot, dict) == False:
 		return None
 
-
 	# make message text
 	full_description = lot.get('description').get('full')[:1200]+"..."
 	msg = f"<strong>Цена - {lot['cost']['current']}, {lot['description']['title']}</strong>" + '\n\n'\

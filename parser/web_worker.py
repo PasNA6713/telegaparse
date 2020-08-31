@@ -85,7 +85,8 @@ def get_lot_info(url: str) -> dict:
 			},
 		"cost": {
 				"current": "",
-				"step": ""
+				"step": "",
+				"flag": ""
 				},
 		"debtor": {
 				"full_name": "",
@@ -105,6 +106,8 @@ def get_lot_info(url: str) -> dict:
 		"state": "",
 		"pictures": []
 	}
+
+
     
 	html = BS(requests.get(url).text, features="lxml")
 	header = html.findAll("td",{"class": "lot-summary-table__cell"})
@@ -118,6 +121,18 @@ def get_lot_info(url: str) -> dict:
 	except Exception:
 		organizer = []
 
+	try:
+		flag = html.find('svg', {"class": "lot-cost__img"}).find("use")["xlink:href"]
+		if flag == '#up-arrow':
+			flag = "up"
+		elif flag == '#down-arrow':
+			flag = "down"
+		elif flag == '#collateral':
+			flag = "commercial"
+	except Exception:
+		flag = ""
+
+	lot["cost"]["flag"] = flag
 	lot["cost"]["current"] = html.find("p", {"class": "lot-cost__value"}).text
 	lot["description"]["title"] = html.find("h2", {"class": "lot-caption__title js-share-search"}).text
 	
@@ -208,7 +223,9 @@ class WebWorker:
 
 				while len(self._lots_info) < number_of_lots*2:
 					if self._lots:
-						self._lots_info.append(get_lot_info(self._lots.popleft()))
+						cur_lot = (get_lot_info(self._lots.popleft()))
+						if cur_lot["marketplace"]["url"] != self._lots_info[-1]["marketplace"]["url"]:
+							self._lots_info.append(cur_lot)
 					else: 
 						break
 

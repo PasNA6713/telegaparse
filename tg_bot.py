@@ -49,12 +49,13 @@ key_1 = types.InlineKeyboardButton(text='Текущая цена (от)', callba
 key_2 = types.InlineKeyboardButton(text='Текущая цена (до)', callback_data='current_query_to')
 keyboard_prices_current.add(key_1, key_2)
 keyboard_lots = types.InlineKeyboardMarkup(row_width=1)
+key_long_descrip = types.InlineKeyboardButton(text="Подробнее")
 key_search_2 = types.InlineKeyboardButton(text='Загрузить еще', callback_data='search')
 keyboard_lots.add(key_search_2)
 
 
 # function for loading of lot's info
-def print_lot(lot, chat_id):
+def print_lot(lot, chat_id, short_descr):
     """send lot info to user"""
     # check errors
     if isinstance(lot, dict) == False:
@@ -71,26 +72,28 @@ def print_lot(lot, chat_id):
 
     # make message text
     full_description = lot.get('description').get('full')[:1200] + "..."
-    msg = f"<strong>Цена - {lot['cost']['current']}, {lot['description']['title']}</strong> " + flag + '\n\n' \
+    msg_short = f"<strong> Цена - {lot['cost']['current']}, {lot['description']['title']}</strong> " + flag + '\n\n' \
                                                                     f"{lot['bidding_type']}" + '\n\n' \
                                                                     f"{full_description}" + '\n\n' \
                                                                     f"Место осмотра: {lot['region']}" + '\n\n' \
-                                                                    f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n' \
+    msg_long = f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n' \
                                                                                                                                                                                                                                             f"Дата начала представления заявок на участие: {lot['date']['start_bid']}" + '\n\n' \
                                                                                                                                                                                                                                                                                                                          f"Дата окончания представления заявок на участие: {lot['date']['end_bid']}" + '\n\n' \
                                                                                                                                                                                                                                                                                                                                                                                                        f"Начальная цена, руб.: {lot['cost']['current']}" + '\n\n' \
                                                                                                                                                                                                                                                                                                                                                                                                                                                            f"Шаг цены: {lot['cost']['step']}"
 
+ 
     # make album with photo
     media = [InputMediaPhoto(i) for i in lot["pictures"] if lot["pictures"]]
     if media:
         bot.send_media_group(chat_id=chat_id, media=media[:5])
-    bot.send_message(chat_id=chat_id, text=msg, parse_mode="html")
+    bot.send_message(chat_id=chat_id, text=msg_short, parse_mode="html")
 
     """contact button"""
     keyboard_contacts = types.InlineKeyboardMarkup()
 
     user_data[chat_id].params["urls"][user_data.get(chat_id).counter] = lot.get("marketplace").get("url")
+    user_data[chat_id.params]["description_long"][user_data.get(chat_id).counter] = msg_long
     user_data[chat_id].counter += 1
 
     key_to_buy = types.InlineKeyboardButton(text='Связаться', callback_data=f"adm_{user_data.get(chat_id).counter}")
@@ -393,6 +396,20 @@ def callback_worker(call):
             bot.send_message(chat_id=196556991, text="Интересуется пользователь: "+text_msg)
             print(call)
             print("Интересуется пользователь: " + text_msg)
+
+        # if wass pressed "Подробнее"
+        elif "descr" in call.data:
+
+            keyboard_descr = types.InlineKeyboardMarkup(row_width=1)
+
+            key_descr = types.InlineKeyboardButton(text='Подробнее')
+            long_number = int(call.data.split("_")[1]) - 1
+
+            long_descr  = current_user.params.get("description_long").get(descr__number)
+            bot.send_message(chat_id=call.message.chat.id, text=short)
+            bot.send_message(chat_id=call.message.chat.id, text=long_descr)
+            
+            print('Подробнее : ' + descr)
 
 
         # if was pressed an each cell after pressed "Категории", "Площадки", "Регионы"

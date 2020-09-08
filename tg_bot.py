@@ -6,15 +6,14 @@ import sys, os
 # from dotenv import load_dotenv
 
 # include .env file
-# load_dotenv(".env")
+load_dotenv(".env")
 # now we can import from ./parser dir
 sys.path.append('parser/')
 from web_worker import *
 
 # load telegram API key fron .env
-# bot = telebot.TeleBot(os.getenv("MY_KEY"))
+bot = telebot.TeleBot(os.getenv("MY_KEY"))
 # bot = telebot.TeleBot("1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50")  # Wallet burn
-bot = telebot.TeleBot("1225070960:AAEST2WsWFmScFepQBA6mOh-4cDQVQVoEE4")  # ClientBot
 
 # all user's data using the TG-bot
 user_data = {}

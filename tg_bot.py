@@ -1,8 +1,9 @@
 import telebot
 from telebot import types
 from telebot.types import InputMediaPhoto
-
+import time
 import sys, os
+
 # from dotenv import load_dotenv
 
 # include .env file
@@ -13,10 +14,14 @@ from web_worker import *
 
 # load telegram API key fron .env
 bot = telebot.TeleBot(os.getenv("MY_KEY"))
-# bot = telebot.TeleBot("1205043047:AAEhXjkWNG6UdE1zaa6YPuDJaKwe5ni0_50")  # Wallet burn
+# bot = telebot.TeleBot("")  # Wallet burn
+# bot = telebot.TeleBot("")  # ClientBot
 
 # all user's data using the TG-bot
 user_data = {}
+
+# admin_chat_id
+ADMIN_ID = 695410130
 
 # create base menu keyboard
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
@@ -54,7 +59,7 @@ keyboard_lots.add(key_search_2)
 
 
 # function for loading of lot's info
-def print_lot(lot, chat_id, short_descr):
+def print_lot(lot, chat_id):
     """send lot info to user"""
     # check errors
     if isinstance(lot, dict) == False:
@@ -68,20 +73,23 @@ def print_lot(lot, chat_id, short_descr):
     elif flag == "commercial":
         flag = "🟠"
 
-
     # make message text
-    full_description = lot.get('description').get('full')[:1200] + "..."
-    msg_short = f"<strong> Цена - {lot['cost']['current']}, {lot['description']['title']}</strong> " + flag + '\n\n' \
-                                                                    f"{lot['bidding_type']}" + '\n\n' \
-                                                                    f"{full_description}" + '\n\n' \
-                                                                    f"Место осмотра: {lot['region']}" + '\n\n' \
-    msg_long = f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n' \
-                                                                                                                                                                                                                                            f"Дата начала представления заявок на участие: {lot['date']['start_bid']}" + '\n\n' \
-                                                                                                                                                                                                                                                                                                                         f"Дата окончания представления заявок на участие: {lot['date']['end_bid']}" + '\n\n' \
-                                                                                                                                                                                                                                                                                                                                                                                                       f"Начальная цена, руб.: {lot['cost']['current']}" + '\n\n' \
-                                                                                                                                                                                                                                                                                                                                                                                                                                                           f"Шаг цены: {lot['cost']['step']}"
+    full_description_short = lot.get('description').get('full')[:200] + "..."
+    full_description_long = lot.get('description').get('full')[:1200] + "..."
 
- 
+    msg_short = flag + f"<strong> {lot['cost']['current']}, {lot['description']['title']}</strong> " + '\n\n' + f"Место осмотра: {lot.get('region')}" + '\n\n' + \
+                f"{lot['bidding_type']}" + '\n\n' \
+                                           f"{full_description_short}" + '\n\n'
+    msg_short_for_msg_long = flag + f"<strong> {lot['cost']['current']}₽, {lot['description']['title']}</strong> " + '\n\n' + f"Место осмотра: {lot['region']}" + \
+                             f"{lot['bidding_type']}" + '\n\n' \
+                                                        f"{full_description_long}" + '\n\n'
+
+    msg_long = f"Дата проведения торгов: {lot['date']['bidding']}" + '\n\n' \
+                                                                     f"Дата начала представления заявок на участие: {lot['date']['start_bid']}" + '\n\n' \
+                                                                                                                                                  f"Дата окончания представления заявок на участие: {lot['date']['end_bid']}" + '\n\n' \
+                                                                                                                                                                                                                                f"Начальная цена, руб.: {lot['cost']['current']}" + '\n\n' \
+                                                                                                                                                                                                                                                                                    f"Шаг цены: {lot['cost']['step']}"
+
     # make album with photo
     media = [InputMediaPhoto(i) for i in lot["pictures"] if lot["pictures"]]
     if media:
@@ -92,11 +100,13 @@ def print_lot(lot, chat_id, short_descr):
     keyboard_contacts = types.InlineKeyboardMarkup()
 
     user_data[chat_id].params["urls"][user_data.get(chat_id).counter] = lot.get("marketplace").get("url")
-    user_data[chat_id.params]["description_long"][user_data.get(chat_id).counter] = msg_long
+    user_data[chat_id].params["description_long"][user_data.get(chat_id).counter] = msg_short_for_msg_long + msg_long
     user_data[chat_id].counter += 1
 
     key_to_buy = types.InlineKeyboardButton(text='Связаться', callback_data=f"adm_{user_data.get(chat_id).counter}")
-    keyboard_contacts.add(key_to_buy)
+    key_descr = types.InlineKeyboardButton(text='Подробнее', callback_data=f"descr_{user_data.get(chat_id).counter}")
+    keyboard_contacts.add(key_to_buy, key_descr)
+    time.sleep(1)
     bot.send_message(text='Связаться с агентом', chat_id=chat_id, reply_markup=keyboard_contacts)
 
 
@@ -284,36 +294,39 @@ def callback_worker(call):
         if call.data == "search":
             try:
                 for district in current_user.params.get("districts"):
-
+    
                     for region in current_user.params.get("districts").get(district).get("regions"):
-
+    
                         if str(region) in current_user.filter.get("regions"):
-
-                            if current_user.params.get("districts").get(district).get("code") not in current_user.filter[
-                                "districts"]:
+    
+                            if current_user.params.get("districts").get(district).get("code") not in \
+                                    current_user.filter[
+                                        "districts"]:
                                 current_user.filter["districts"].append(
-
+    
                                     current_user.params.get("districts").get(district).get("code"))
-
+    
                                 continue
-
+    
                 if current_user.changed or current_user.web_worker == "":
                     current_user.web_worker = WebWorker(current_user.filter)
-
+    
                     current_user.changed = False
-
+    
                 if current_user.web_worker._lots_info:
                     for i in current_user.web_worker.get_lots_info():
                         print_lot(i, call.message.chat.id)
                     # load menu keyboard
                     bot.send_message(call.message.chat.id, text="Еще немного лотов?", reply_markup=keyboard_lots)
-                    bot.send_message(call.message.chat.id, text="Изменить параметры фильтра?", reply_markup=keyboard_menu)
+                    bot.send_message(call.message.chat.id, text="Изменить параметры фильтра?",
+                                     reply_markup=keyboard_menu)
                 else:
                     bot.send_message(call.message.chat.id, text="Кажется, лоты закончились :(")
                 print(current_user.filter, "\n")
             except Exception as e:
                 print(e)
-                bot.send_message(call.message.chat.id, text="Слишком много запросов...Попробуйте позже, пожалуйста", reply_markup=keyboard_menu)
+                bot.send_message(call.message.chat.id, text="Слишком много запросов...Попробуйте позже, пожалуйста",
+                                 reply_markup=keyboard_menu)
 
 
         # if was pressed "Категории" or "Площадки"
@@ -386,30 +399,33 @@ def callback_worker(call):
                 if not first_name: first_name = ""
                 last_name = call.from_user.last_name
                 if not last_name: last_name = ""
-                username =  first_name + " " + last_name
+                username = first_name + " " + last_name
                 text_msg = username + " : " + url
             else:
                 text_msg = "https://t.me/" + username + " : " + url
 
-
-            bot.send_message(chat_id=196556991, text="Интересуется пользователь: "+text_msg)
+            bot.send_message(chat_id=ADMIN_ID, text="Интересуется пользователь: " + text_msg)
             print(call)
             print("Интересуется пользователь: " + text_msg)
 
         # if wass pressed "Подробнее"
         elif "descr" in call.data:
-
+            print(current_user.params)
             keyboard_descr = types.InlineKeyboardMarkup(row_width=1)
 
-            key_descr = types.InlineKeyboardButton(text='Подробнее')
-            long_number = int(call.data.split("_")[1]) - 1
+            descr_number = int(call.data.split("_")[1]) - 1
 
-            long_descr  = current_user.params.get("description_long").get(descr__number)
-            bot.send_message(chat_id=call.message.chat.id, text=short)
-            bot.send_message(chat_id=call.message.chat.id, text=long_descr)
-            
-            print('Подробнее : ' + descr)
+            long_descr = current_user.params.get("description_long").get(descr_number)
+            keyboard_contacts = types.InlineKeyboardMarkup(row_width=1)
+            key_to_buy = types.InlineKeyboardButton(text='Связаться',
+                                                    callback_data=f"adm_{descr_number}")
+            keyboard_contacts.add(key_to_buy)
 
+            time.sleep(1)
+            bot.send_message(chat_id=call.message.chat.id, text=long_descr, parse_mode='html',
+                             reply_markup=keyboard_contacts)
+            bot.send_message(call.message.chat.id, text="Изменить параметры фильтра?",
+                             reply_markup=keyboard_menu)
 
         # if was pressed an each cell after pressed "Категории", "Площадки", "Регионы"
         elif call.data.split("_")[0] == "btnCategories" or \
@@ -504,14 +520,10 @@ def callback_worker(call):
     # update all current user's data
     user_data[call.message.chat.id] = current_user
 
+
 try:
     bot.polling(none_stop=True)
 except Exception as e:
     print(e)
     bot.polling(none_stop=True)
 
-
-
-# chat_id Клиент 196556991
-# chat_id Никита 548919987
-# chat_id Олега 695410130

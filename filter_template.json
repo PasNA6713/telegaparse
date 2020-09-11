@@ -1,15 +1,15 @@
 {
-    "markets": []
-    , "categories": []
-    , "start price": {
-        "from": ""
-        , "to": ""
-    }
-    , "current price": {
-        "from": ""
-        , "to": ""
-    }
-    , "districts": []
-    , "regions": []
-    , "search text": ""
+    "markets": [],
+    "categories": [],
+    "districts": [],
+    "regions": [],
+    "start price": {
+        "from": "",
+        "to": ""
+    },
+    "current price": {
+        "from": "",
+        "to": ""
+    },
+    "search text": ""
 }

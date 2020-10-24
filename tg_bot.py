@@ -7,21 +7,20 @@ import sys, os
 # from dotenv import load_dotenv
 
 # include .env file
-load_dotenv(".env")
+# load_dotenv(".env")
 # now we can import from ./parser dir
 sys.path.append('parser/')
 from web_worker import *
 
 # load telegram API key fron .env
-bot = telebot.TeleBot(os.getenv("MY_KEY"))
-# bot = telebot.TeleBot("")  # Wallet burn
-# bot = telebot.TeleBot("")  # ClientBot
+# bot = telebot.TeleBot(os.getenv("MY_KEY"))
+bot = telebot.TeleBot("")  # ClientBot
 
 # all user's data using the TG-bot
 user_data = {}
 
 # admin_chat_id
-ADMIN_ID = 695410130
+ADMIN_ID = 12345678910
 
 # create base menu keyboard
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
@@ -30,10 +29,12 @@ key_category = types.InlineKeyboardButton(text='Категории', callback_da
 key_regions = types.InlineKeyboardButton(text='Регионы', callback_data='districts_query')
 key_start_price = types.InlineKeyboardButton(text='Начальная стоимость', callback_data='start_price_query')
 key_end_price = types.InlineKeyboardButton(text='Текущая стоимость', callback_data='end_price_query')
-key_search = types.InlineKeyboardButton(text='Найти лоты', callback_data='search')
+key_search = types.InlineKeyboardButton(text=f'<b>Найти лоты<b>', callback_data='search')
 key_text = types.InlineKeyboardButton(text='Поиск по словам', callback_data='search_query_text')
 keyboard_menu.add(key_start_price, key_end_price, key_markets, key_regions, key_category, key_text)
 keyboard_menu.add(key_search)
+clear_filters = types.InlineKeyboardButton(text='Очистить фильтр', callback_data='clear_filter')
+keyboard_menu.add(clear_filters)
 keyboard_districts = types.InlineKeyboardMarkup(row_width=1)
 key_1 = types.InlineKeyboardButton(text='Центральный федеральный округ', callback_data='regions_query_1')
 key_2 = types.InlineKeyboardButton(text='Северо-Западный федеральный округ', callback_data='regions_query_2')
@@ -67,9 +68,9 @@ def print_lot(lot, chat_id):
 
     flag = lot.get("cost").get("flag")
     if flag == "up":
-        flag = "🟢"
+        flag = "🟢🔺"
     elif flag == "down":
-        flag = "🔴"
+        flag = "🔴🔻"
     elif flag == "commercial":
         flag = "🟠"
 
@@ -94,7 +95,6 @@ def print_lot(lot, chat_id):
     media = [InputMediaPhoto(i) for i in lot["pictures"] if lot["pictures"]]
     if media:
         bot.send_media_group(chat_id=chat_id, media=media[:5])
-    bot.send_message(chat_id=chat_id, text=msg_short, parse_mode="html")
 
     """contact button"""
     keyboard_contacts = types.InlineKeyboardMarkup()
@@ -107,7 +107,8 @@ def print_lot(lot, chat_id):
     key_descr = types.InlineKeyboardButton(text='Подробнее', callback_data=f"descr_{user_data.get(chat_id).counter}")
     keyboard_contacts.add(key_to_buy, key_descr)
     time.sleep(1)
-    bot.send_message(text='Связаться с агентом', chat_id=chat_id, reply_markup=keyboard_contacts)
+
+    bot.send_message(chat_id=chat_id, text=msg_short, reply_markup=keyboard_contacts, parse_mode="html")
 
 
 # function of a button "Назад" from menu
@@ -180,7 +181,7 @@ class User:
                                   reply_markup=keyboard_prices_current)
 
     def get_text_query(self, message):
-        self.filter["search_text"] = message.text
+        self.filter["search text"] = message.text
         accepted(message)
 
     def make_price(self, call):
@@ -277,6 +278,7 @@ class User:
 @bot.message_handler(commands=['start'])
 def get_start(message):
     """start message handler"""
+    bot.send_photo(chat_id=message.from_user.id, photo="https://torgi-blog.com/wp-content/uploads/2018/09/1748-01.png", caption="https://torgi.gov.ru/index.html")
     bot.send_message(message.from_user.id, text="Добро пожаловать в Торги по банкротству РФ!",
                      reply_markup=keyboard_menu)
     user_data[message.chat.id] = User()
@@ -294,25 +296,25 @@ def callback_worker(call):
         if call.data == "search":
             try:
                 for district in current_user.params.get("districts"):
-    
+
                     for region in current_user.params.get("districts").get(district).get("regions"):
-    
+
                         if str(region) in current_user.filter.get("regions"):
-    
+
                             if current_user.params.get("districts").get(district).get("code") not in \
                                     current_user.filter[
                                         "districts"]:
                                 current_user.filter["districts"].append(
-    
+
                                     current_user.params.get("districts").get(district).get("code"))
-    
+
                                 continue
-    
+
                 if current_user.changed or current_user.web_worker == "":
                     current_user.web_worker = WebWorker(current_user.filter)
-    
+
                     current_user.changed = False
-    
+
                 if current_user.web_worker._lots_info:
                     for i in current_user.web_worker.get_lots_info():
                         print_lot(i, call.message.chat.id)
@@ -383,9 +385,11 @@ def callback_worker(call):
 
             keyboard_to_admin = types.InlineKeyboardMarkup(row_width=1)
 
-            key_to_admin = types.InlineKeyboardButton(text='Агент', url="https://t.me/Agentbankrot")
+            key_to_admin = types.InlineKeyboardButton(text='Написать', url="https://t.me/Agentbankrot")
+            key_to_admin_call = types.InlineKeyboardButton(text='Позвонить', callback_data='call')
 
             keyboard_to_admin.add(key_to_admin)
+            keyboard_to_admin.add(key_to_admin_call)
 
             url_number = int(call.data.split("_")[1]) - 1
 
@@ -407,6 +411,19 @@ def callback_worker(call):
             bot.send_message(chat_id=ADMIN_ID, text="Интересуется пользователь: " + text_msg)
             print(call)
             print("Интересуется пользователь: " + text_msg)
+
+        # if was pressed "Позвонить"
+        elif call.data == "call":
+            bot.send_message(chat_id=call.message.chat.id, text="[+79523972045](tel:+79523972045)", parse_mode='Markdown')
+
+        # if was pressed "Очистить фильтр"
+        elif call.data == "clear_filter":
+            with open("template_params.json", 'r', encoding='utf-8') as file:
+                current_user.params = json.load(file)
+            with open("filter_template.json", 'r', encoding='utf-8') as file2:
+                current_user.filter = json.load(file2)
+
+            bot.answer_callback_query(call.id, show_alert=True, text="Вы очистили фильтр!")
 
         # if wass pressed "Подробнее"
         elif "descr" in call.data:
@@ -526,4 +543,6 @@ try:
 except Exception as e:
     print(e)
     bot.polling(none_stop=True)
+
+
 

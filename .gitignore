@@ -7,3 +7,4 @@ __pycache__
 *.env
 *.xml
 .idea/telegaparse.iml
+*.log

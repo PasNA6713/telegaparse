@@ -19,6 +19,7 @@ def get_url(filter_params={"markets": [], "categories": [], "districts": [], "re
     current_price_from = ""
     current_price_to = ""
     search_text = ""
+    section = ""
     marketplaces = make_str(filter_params["markets"], "marketplaces")
     categories = make_str(filter_params["categories"], "categorie_childs")
     districts = make_str(filter_params["districts"], "districts")
@@ -31,8 +32,10 @@ def get_url(filter_params={"markets": [], "categories": [], "districts": [], "re
         current_price_to = filter_params['current price']['to']
     if "search text" in filter_params.keys():
         search_text = filter_params['search text']
-    print(f"https://торги-россии.рф/search?title_search=&search={search_text}{marketplaces}{categories}{districts}{regions}&trades-sectiont&begin-price-from={start_price_from}&begin-price-to={start_price_to}&current-price-from={current_price_from}&current-price-to={current_price_to}")
-    return f"https://торги-россии.рф/search?title_search=&search={search_text}{marketplaces}{categories}{districts}{regions}&trades-section&begin-price-from={start_price_from}&begin-price-to={start_price_to}&current-price-from={current_price_from}&current-price-to={current_price_to}"
+    if "section" in filter_params.keys():
+        section = filter_params['section']
+
+    return f"https://торги-россии.рф/search?title_search=&search={search_text}{marketplaces}{categories}{districts}{regions}&trades-section={section}&begin-price-from={start_price_from}&begin-price-to={start_price_to}&current-price-from={current_price_from}&current-price-to={current_price_to}"
 
 
 @retry(3)
@@ -152,8 +155,8 @@ def get_lot_info(url: str) -> dict:
             lot['bidding_type'] = header[i + 1].find("a")["data-tooltip"]
         elif header[i].text == "Площадка:":
             lot['marketplace']['name'] = header[i + 1].text.strip()
-            lot['marketplace']['url'] = html.find("a", {"class": "button button--blue"})["href"]
-
+            # lot['marketplace']['url'] = html.find("a", {"class": "button button--blue"})["href"]
+            lot['marketplace']['url'] = [i['href'] for i in html.findAll("a", {"class": "button button--blue"})]
     for i in range(len(labels)):
         if labels[i].find("span", {"class": "param-label"}).text == "Регион:":
             lot["region"] = labels[i].find("span", {"class": "js-share-search"}).text

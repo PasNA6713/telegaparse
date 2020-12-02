@@ -29,13 +29,13 @@ ADMIN_ID = os.getenv("MY_TG_ID")
 
 # create base menu keyboard
 keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
-key_category = types.InlineKeyboardButton(text='Категории', callback_data='categories_query')
-key_regions = types.InlineKeyboardButton(text='Регионы', callback_data='districts_query')
-key_section = types.InlineKeyboardButton(text='Секции', callback_data='sections_query')
-key_start_price = types.InlineKeyboardButton(text='Начальная стоимость', callback_data='start_price_query')
-key_end_price = types.InlineKeyboardButton(text='Текущая стоимость', callback_data='end_price_query')
-key_search = types.InlineKeyboardButton(text=f'Найти лоты', callback_data='search')
-key_text = types.InlineKeyboardButton(text='Поиск по словам', callback_data='search_query_text')
+key_category = types.InlineKeyboardButton(text='📝Категории', callback_data='categories_query')
+key_regions = types.InlineKeyboardButton(text=f'🌍Регионы', callback_data='districts_query')
+key_section = types.InlineKeyboardButton(text=f'⚙️Секции', callback_data='sections_query')
+key_start_price = types.InlineKeyboardButton(text='💲Начальная стоимость', callback_data='start_price_query')
+key_end_price = types.InlineKeyboardButton(text='💲Текущая стоимость', callback_data='end_price_query')
+key_search = types.InlineKeyboardButton(text=f'🔍Найти лоты', callback_data='search')
+key_text = types.InlineKeyboardButton(text='🔤Поиск по словам', callback_data='search_query_text')
 keyboard_menu.add(key_start_price, key_end_price, key_regions, key_category, key_section, key_text)
 keyboard_menu.add(key_search)
 
@@ -61,11 +61,11 @@ key_2 = types.InlineKeyboardButton(text='Текущая цена (до)', callba
 keyboard_prices_current.add(key_1, key_2)
 
 keyboard_lots = types.InlineKeyboardMarkup(row_width=1)
-key_long_descrip = types.InlineKeyboardButton(text="Подробнее")
-key_search_2 = types.InlineKeyboardButton(text='Загрузить еще', callback_data='search')
+key_long_descrip = types.InlineKeyboardButton(text="⏬Подробнее")
+key_search_2 = types.InlineKeyboardButton(text='⬇️Загрузить еще', callback_data='search')
 keyboard_lots.add(key_search_2)
 
-clear_filters = types.InlineKeyboardButton(text='Очистить фильтр', callback_data='clear_filter')
+clear_filters = types.InlineKeyboardButton(text=f'❌Очистить фильтр', callback_data='clear_filter')
 keyboard_menu.add(clear_filters)
 
 keyboard_section = types.InlineKeyboardMarkup(row_width=1)
@@ -147,14 +147,14 @@ def print_lot(lot, chat_id):
     user_data[chat_id].params["urls"][user_data.get(chat_id).counter] = lot.get("marketplace").get("url")
     user_data[chat_id].params["description_long"][user_data.get(chat_id).counter] = msg_short_for_msg_long + msg_long
     user_data[chat_id].counter += 1
-    key_to_buy = types.InlineKeyboardButton(text='Связаться', callback_data=f"adm_{user_data.get(chat_id).counter}")
-    key_descr = types.InlineKeyboardButton(text='Подробнее', callback_data=f"descr_{user_data.get(chat_id).counter}")
+    key_to_buy = types.InlineKeyboardButton(text='📞Связаться', callback_data=f"adm_{user_data.get(chat_id).counter}")
+    key_descr = types.InlineKeyboardButton(text='⏬Подробнее', callback_data=f"descr_{user_data.get(chat_id).counter}")
     keyboard_contacts.add(key_to_buy, key_descr)
     time.sleep(1)
     bot.send_message(chat_id=chat_id, text=msg_short, reply_markup=keyboard_contacts, parse_mode="html")
 
 
-# function of a button "Назад" from menu
+# function of a button "Применить" from menu
 def make_back_from_menu(call):
     alert_text = f"Вы настроили {call.message.text.split()[1]}!"
     bot.answer_callback_query(call.id, show_alert=True, text=alert_text)
@@ -256,8 +256,10 @@ class User:
         bot.register_next_step_handler(message, self.get_text_query)
 
     def make_menu_from_districts(self, call):
+        key_accept = types.InlineKeyboardButton(text="👌Применить", callback_data='back_menu')
         keys_lst = []
         keyboard_filter_params = types.InlineKeyboardMarkup(row_width=2)
+        keyboard_filter_params.add(key_accept)
 
         for district in self.params.get("districts"):
             if "query" in call.data:
@@ -279,9 +281,6 @@ class User:
                                                  callback_data=f"btnRegions_{self.params.get('regions').get(region)[0]}")
 
                 keys_lst.append(key)
-
-        key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
-        keys_lst.append(key)
         keyboard_filter_params.add(*keys_lst)
         bot.edit_message_text(text='Выбери параметр', chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
@@ -292,6 +291,7 @@ class User:
                                         message_id=call.message.message_id, reply_markup=keyboard_section)
 
     def make_menu(self, call):
+        key_accept = types.InlineKeyboardButton(text="👌Применить", callback_data='back_menu')
         keys_lst = []
         filter_parameter = call.data.split("_")[0]
 
@@ -302,7 +302,9 @@ class User:
         if call.data == "btnMarkets" in call.data:
             row_width = 1
 
-        keyboard_filter_params = types.InlineKeyboardMarkup(row_width=row_width)
+        keyboard_filter_params = types.InlineKeyboardMarkup(row_width=2)
+        keyboard_filter_params.add(key_accept)
+
         for item in self.params.get(filter_parameter).keys():
             if self.params.get(filter_parameter).get(item)[1]:
                 btn_text = f"✅{item}"
@@ -312,9 +314,7 @@ class User:
             callback_data = f"btn{filter_parameter.capitalize()}_{buf}"
             key = types.InlineKeyboardButton(text=btn_text,
                                              callback_data=callback_data)
-            keys_lst.append(key)
-        key = types.InlineKeyboardButton(text="◀️Назад", callback_data='back_menu')
-        keys_lst.append(key)
+            keys_lst.append(key)   
         keyboard_filter_params.add(*keys_lst)
         bot.edit_message_text(text='Выбери параметр', chat_id=call.message.chat.id, message_id=call.message.message_id,
                               reply_markup=keyboard_filter_params)
@@ -422,7 +422,7 @@ def callback_worker(call):
         elif call.data == "search_query_text":
             current_user.make_text_query(call)
 
-        # if was pressed "Назад"
+        # if was pressed "Применить"
         elif call.data == "back_menu":
             current_user.changed = True
             make_back_from_menu(call)
@@ -469,7 +469,7 @@ def callback_worker(call):
             url_number = int(call.data.split("_")[1]) - 1
             long_descr = current_user.params.get("description_long").get(url_number)
             keyboard_contacts = types.InlineKeyboardMarkup(row_width=1)
-            key_to_buy = types.InlineKeyboardButton(text='Связаться',
+            key_to_buy = types.InlineKeyboardButton(text='📞Связаться',
                                                     callback_data=f"adm_{url_number}_desc")
             keyboard_contacts.add(key_to_buy)
 

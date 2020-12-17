@@ -9,4 +9,4 @@ __pycache__
 .idea/telegaparse.iml
 *.log
 *venv
-*txt
+NOTES_FOR_ME.txt

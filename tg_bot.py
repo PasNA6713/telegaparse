@@ -80,31 +80,6 @@ key_8 = types.InlineKeyboardButton(text="Прямая продажа/лизин�
 keyboard_section.add(key_1, key_2, key_3, key_4, key_5, key_6, key_7, key_8)
 
 
-# function for making url from filters
-def get_url_from_dictionary(current_user):
-    search_text = current_user.filter.get('search text')
-    markets = current_user.filter.get('markets')
-    categories = current_user.filter.get('categories')
-    districts = current_user.filter.get('districts')
-    regions = current_user.filter.get('regions')
-    section = current_user.filter.get('section')
-    start_price_from = current_user.filter.get('start price').get('from')
-    start_price_to = current_user.filter.get('start price').get('to')
-    current_price_from = current_user.filter.get('current price').get('from')
-    current_price_to = current_user.filter.get('current price').get('to')
-
-    if not markets:
-        markets = ''
-    if not regions:
-        regions = ''
-    if not categories:
-        categories = ''
-    if not districts:
-        districts = ''
-
-    return f"https://торги-россии.рф/search?title_search=&search={search_text}{markets}{categories}{districts}{regions}&trades-section={section}&begin-price-from={start_price_from}&begin-price-to={start_price_to}&current-price-from={current_price_from}&current-price-to={current_price_to}"
-
-
 # function for loading of lot's info
 def print_lot(lot, chat_id):
     """send lot info to user"""
@@ -382,9 +357,8 @@ def callback_worker(call):
             else:
                 bot.send_message(call.message.chat.id, text="Кажется, лоты закончились :(")
 
-            logger.debug(f"query url for {call.message.chat.id}-{current_user.params.get('username')}: {get_url_from_dictionary(current_user)}")
+            logger.debug(f"query url for {call.message.chat.id}-{current_user.params.get('username')}: {get_url(current_user.filter)}")
             logger.debug(f"filter for {call.message.chat.id}-{current_user.params.get('username')}: {current_user.filter}")
-            logger.debug(f"params for {call.message.chat.id}-{current_user.params.get('username')}: {current_user.params}")
 
             # except Exception as e:
             # logger.error(f"IN SEARCH BLOCK: {e}")
@@ -572,11 +546,26 @@ def callback_worker(call):
 
 @logger.catch
 def main():
-    bot.polling(none_stop=True)
+    bot.polling(none_stop=True, interval=1)
 
+
+
+try:
+    main()
+except requests.exceptions.ConnectionError:
+    pass
+except urllib3.exceptions.MaxRetryError:
+    pass
+except socket.timeout:
+    pass
+except urllib3.exceptions.ReadTimeoutError:
+    pass
+except requests.exceptions.ReadTimeout:
+    pass
+except OSError:
+    pass
+except urllib3.exceptions.NewConnectionError:
+    pass
 
 while True:
-    try:
-        main()
-    except requests.exceptions.ConnectionError:
-        pass
+    pass

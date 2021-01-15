@@ -32,11 +32,10 @@ keyboard_menu = types.InlineKeyboardMarkup(row_width=2)
 key_category = types.InlineKeyboardButton(text='📝Категории', callback_data='categories_query')
 key_regions = types.InlineKeyboardButton(text=f'🌍Регионы', callback_data='districts_query')
 key_section = types.InlineKeyboardButton(text=f'⚙️Секции', callback_data='sections_query')
-key_start_price = types.InlineKeyboardButton(text='💲Начальная стоимость', callback_data='start_price_query')
 key_end_price = types.InlineKeyboardButton(text='💲Текущая стоимость', callback_data='end_price_query')
 key_search = types.InlineKeyboardButton(text=f'🔍Найти лоты', callback_data='search')
 key_text = types.InlineKeyboardButton(text='🔤Поиск по словам', callback_data='search_query_text')
-keyboard_menu.add(key_start_price, key_end_price, key_regions, key_category, key_section, key_text)
+keyboard_menu.add(key_end_price, key_regions, key_category, key_section, key_text)
 keyboard_menu.add(key_search)
 
 keyboard_districts = types.InlineKeyboardMarkup(row_width=1)
@@ -87,6 +86,7 @@ def print_lot(lot, chat_id):
     if not isinstance(lot, dict):
         return None
 
+    crossed_out_price = lot.get('cost').get('start')
     flag = lot.get("cost").get("flag")
     if flag == "up":
         flag = "🟢🔺"
@@ -99,7 +99,7 @@ def print_lot(lot, chat_id):
     full_description_short = lot.get('description').get('full')[:200] + "..."
     full_description_long = lot.get('description').get('full')[:1200] + "..."
 
-    msg_short = flag + f"<strong> {lot['cost']['current']}, {lot['description']['title']}</strong> " + '\n\n' + f"Место осмотра: {lot.get('region')}" + '\n\n' + \
+    msg_short = flag + f"<strike> {lot['cost']['start']}</strike> <strong> {lot['cost']['current']}, {lot['description']['title']}</strong> " + '\n\n' + f"Место осмотра: {lot.get('region')}" + '\n\n' + \
                 f"{lot['bidding_type']}" + '\n\n' f"{full_description_short}" + '\n\n'
 
     # two message for button "Подробнее" (one of it can be empty)
@@ -377,11 +377,6 @@ def callback_worker(call):
         # if was pressed "Категории"
         elif call.data == "categories_query":
             current_user.make_menu(call)
-
-        # if was pressed "Начальная стоимость"
-        elif call.data == "start_price_query":
-            bot.edit_message_text(text='Выбери', chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                  reply_markup=keyboard_prices_start)
 
         # if was pressed "Текущая стоимость"
         elif call.data == "end_price_query":

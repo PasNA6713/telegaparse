@@ -92,6 +92,7 @@ def get_lot_info(url: str) -> dict:
             "full": ""
         },
         "cost": {
+            "start": "",
             "current": "",
             "step": "",
             "flag": ""
@@ -139,7 +140,10 @@ def get_lot_info(url: str) -> dict:
         flag = ""
 
     lot["cost"]["flag"] = flag
-    lot["cost"]["current"] = html.find("p", {"class": "lot-cost__value"}).text
+    lot_all_costs = html.find_all("p", {"class": "lot-cost__value"}) 
+    lot["cost"]["current"] = lot_all_costs[0].text
+    if len(lot_all_costs) > 1:
+        lot["cost"]["start"] = lot_all_costs[1].text
     lot["description"]["title"] = html.find("h2", {"class": "lot-caption__title js-share-search"}).text
 
     for i in range(len(header)):
@@ -165,8 +169,8 @@ def get_lot_info(url: str) -> dict:
                 lot["object"] = labels[i].find("a").text
             except Exception:
                 pass
-        elif labels[i].find("span", {"class": "param-label"}).text == "Начальная стоимость:":
-            lot["cost"]["current"] = labels[i].find("span", {"class": "js-share-search"}).text
+        # elif labels[i].find("span", {"class": "param-label"}).text == "Начальная стоимость:":
+            # lot["cost"]["current"] = labels[i].find("span", {"class": "js-share-search"}).text
         elif labels[i].find("span", {"class": "param-label"}).text == "Шаг:":
             lot["cost"]["step"] = labels[i].find("span", {"class": "js-share-search"}).text.replace("\xa0", "")
         elif labels[i].find("span", {"class": "param-label"}).text == "Общая информация:":
